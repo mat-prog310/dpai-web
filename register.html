@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - DPAI | Créez votre compte gratuit</title>
+    <meta name="description" content="Créez votre compte DPAI gratuitement et obtenez 50 tokens pour commencer vos analyses stratégiques.">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="services.html" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Accueil</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Inscription</span>
+            </div>
+            <h1>Créez votre compte</h1>
+            <p>Inscription gratuite - 50 tokens offerts pour commencer vos analyses.</p>
+        </div>
+    </section>
+
+    <!-- Register Form Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <!-- Left Column - Info -->
+                <div class="auth-info">
+                    <h2>Rejoignez DPAI dès aujourd'hui</h2>
+                    <p>Créez votre compte gratuitement et découvrez nos outils d'analyse stratégique avancée.</p>
+                    
+                    <div class="auth-benefits">
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h4>50 tokens offerts</h4>
+                                <p>Commencez immédiatement avec des analyses gratuites</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h4>Accès instantané</h4>
+                                <p>Démarrez vos premières analyses en quelques minutes</p>
+                            </div>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="benefit-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="benefit-content">
+                                <h4>Sécurité garantie</h4>
+                                <p>Vos données sont protégées et confidentielles</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-link">
+                        <p>Vous avez déjà un compte ?</p>
+                        <a href="login.html" class="btn btn-outline">
+                            <i class="fas fa-sign-in-alt"></i> Se connecter
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Form -->
+                <div class="auth-form-container">
+                    <div class="auth-form-wrapper">
+                        <div class="auth-form-header">
+                            <h3>Créer votre compte</h3>
+                            <p>Remplissez le formulaire pour créer votre compte DPAI</p>
+                        </div>
+                        
+                        <form id="registerForm" class="auth-form">
+                            <div class="alert alert-error" id="registerError" style="display: none;">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <div class="alert-content">
+                                    <span class="alert-title" id="registerErrorTitle">Erreur</span>
+                                    <span class="alert-message" id="registerErrorMessage"></span>
+                                </div>
+                                <button type="button" class="alert-close" id="registerErrorClose">&times;</button>
+                            </div>
+                            
+                            <div class="alert alert-success" id="registerSuccess" style="display: none;">
+                                <i class="fas fa-check-circle"></i>
+                                <div class="alert-content">
+                                    <span class="alert-title">Succès</span>
+                                    <span class="alert-message">Inscription réussie ! Un email de vérification vous a été envoyé.</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="registerName">Nom complet</label>
+                                <input type="text" class="form-input" id="registerName" 
+                                       placeholder="Votre nom complet" required minlength="2">
+                                <span class="form-error" id="nameError">Veuillez entrer votre nom</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="registerEmail">Adresse email</label>
+                                <input type="email" class="form-input" id="registerEmail" 
+                                       placeholder="Votre adresse email" required>
+                                <span class="form-error" id="emailError">Veuillez entrer une adresse email valide</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="registerPassword">Mot de passe</label>
+                                <div class="input-with-icon">
+                                    <input type="password" class="form-input" id="registerPassword" 
+                                           placeholder="Créez un mot de passe" required minlength="6">
+                                    <button type="button" class="toggle-password" id="toggleRegisterPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <span class="form-error" id="passwordError">Le mot de passe doit contenir au moins 6 caractères</span>
+                                <div class="password-strength">
+                                    <div class="strength-bar">
+                                        <div class="strength-fill" id="passwordStrength"></div>
+                                    </div>
+                                    <span class="strength-text" id="passwordStrengthText"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="registerConfirmPassword">Confirmer le mot de passe</label>
+                                <div class="input-with-icon">
+                                    <input type="password" class="form-input" id="registerConfirmPassword" 
+                                           placeholder="Confirmez votre mot de passe" required minlength="6">
+                                    <button type="button" class="toggle-password" id="toggleConfirmPassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <span class="form-error" id="confirmPasswordError">Les mots de passe ne correspondent pas</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="referralCode">Code de parrainage (optionnel)</label>
+                                <input type="text" class="form-input" id="referralCode" 
+                                       placeholder="Code de parrainage">
+                                <span class="form-hint">Si vous avez été parrainé, entrez le code ici pour obtenir des bonus</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="companyName">Nom de l'entreprise (optionnel)</label>
+                                <input type="text" class="form-input" id="companyName" 
+                                       placeholder="Nom de votre entreprise">
+                                <span class="form-hint">Utilisé pour personnaliser votre expérience</span>
+                            </div>
+                            
+                            <div class="form-agreement">
+                                <input type="checkbox" id="termsAgreement" required>
+                                <label for="termsAgreement">
+                                    J'accepte les <a href="terms.html" target="_blank">Conditions Générales</a> 
+                                    et la <a href="privacy.html" target="_blank">Politique de Confidentialité</a>
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="registerBtnForm">
+                                <i class="fas fa-user-plus"></i> Créer mon compte
+                            </button>
+                            
+                            <div class="form-divider">
+                                <span>ou</span>
+                            </div>
+                            
+                            <div class="social-login">
+                                <button type="button" class="btn btn-outline btn-block" id="googleRegisterBtn">
+                                    <i class="fab fa-google"></i> S'inscrire avec Google
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="auth-form-footer">
+                            <p>Vous avez déjà un compte ? <a href="login.html">Se connecter</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Preview -->
+    <section class="features-preview">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Découvrez</span>
+                <h2 class="section-title">
+                    Ce que vous allez pouvoir faire
+                </h2>
+            </div>
+            
+            <div class="features-grid-small">
+                <div class="feature-card-small">
+                    <i class="fas fa-swimming-pool"></i>
+                    <h4>Analyse SWOT</h4>
+                </div>
+                <div class="feature-card-small">
+                    <i class="fas fa-project-diagram"></i>
+                    <h4>Porter 5 Forces</h4>
+                </div>
+                <div class="feature-card-small">
+                    <i class="fas fa-globe-americas"></i>
+                    <h4>Analyse PESTEL</h4>
+                </div>
+                <div class="feature-card-small">
+                    <i class="fas fa-users"></i>
+                    <h4>Analyse Concurrentielle</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="/#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="login.html">Connexion</a></li>
+                        <li><a href="register.html">Inscription</a></li>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/stripe-service.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/register.js"></script>
+</body>
+</html>

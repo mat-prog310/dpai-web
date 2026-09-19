@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs - DPAI | Abonnements et Tokens</title>
+    <meta name="description" content="Découvrez nos formules d'abonnements et packs de tokens. Choisissez entre Gratuit, Pro ou Entreprise, ou achetez des tokens à la carte.">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="services.html" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link active">Tarifs</a></li>
+                <li><a href="/#how-it-works" class="nav-link">Comment ça marche</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Accueil</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Tarifs</span>
+            </div>
+            <h1>Tarifs</h1>
+            <p>Choisissez la formule qui correspond le mieux à vos besoins</p>
+        </div>
+    </section>
+
+    <!-- Pricing Tabs -->
+    <section class="pricing-tabs-section">
+        <div class="container">
+            <div class="pricing-tabs">
+                <button class="pricing-tab active" data-tab="subscriptions">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Abonnements</span>
+                </button>
+                <button class="pricing-tab" data-tab="tokens">
+                    <i class="fas fa-coins"></i>
+                    <span>Packs de Tokens</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subscriptions Section -->
+    <section class="subscriptions-section" id="subscriptions">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Abonnements</span>
+                <h2 class="section-title">
+                    Des formules flexibles pour tous les besoins
+                </h2>
+                <p class="section-subtitle">
+                    Bénéficiez d'un quota mensuel de tokens et d'un accès complet à nos fonctionnalités.
+                </p>
+            </div>
+            
+            <div class="pricing-cards-full">
+                <!-- Free Plan -->
+                <div class="pricing-card-full">
+                    <div class="pricing-card-header">
+                        <h3>Gratuit</h3>
+                        <div class="pricing-badge">Gratuit</div>
+                    </div>
+                    <div class="pricing-price-full">
+                        <span class="price-amount">0€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens-full">
+                        <i class="fas fa-coins"></i>
+                        <span>50 tokens + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features-full">
+                        <li><i class="fas fa-check"></i> Analyses de base</li>
+                        <li><i class="fas fa-check"></i> SWOT (limité)</li>
+                        <li><i class="fas fa-check"></i> Porter 5 Forces (limité)</li>
+                        <li><i class="fas fa-check"></i> PESTEL (limité)</li>
+                        <li><i class="fas fa-check"></i> 3 projets</li>
+                        <li><i class="fas fa-check"></i> 2GB stockage</li>
+                        <li><i class="fas fa-times"></i> Rapports détaillés</li>
+                        <li><i class="fas fa-times"></i> Support prioritaire</li>
+                        <li><i class="fas fa-times"></i> Accès API</li>
+                    </ul>
+                    <div class="pricing-actions">
+                        <a href="register.html" class="btn btn-outline btn-block">
+                            <i class="fas fa-user-plus"></i> Créer un compte gratuit
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Pro Plan -->
+                <div class="pricing-card-full featured">
+                    <div class="featured-ribbon">Le plus populaire</div>
+                    <div class="pricing-card-header">
+                        <h3>Pro</h3>
+                        <div class="pricing-badge">Professionnel</div>
+                    </div>
+                    <div class="pricing-price-full">
+                        <span class="price-amount">50€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens-full">
+                        <i class="fas fa-coins"></i>
+                        <span>500 tokens/mois + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features-full">
+                        <li><i class="fas fa-check"></i> Toutes les analyses</li>
+                        <li><i class="fas fa-check"></i> SWOT complète</li>
+                        <li><i class="fas fa-check"></i> Porter 5 Forces complète</li>
+                        <li><i class="fas fa-check"></i> PESTEL complète</li>
+                        <li><i class="fas fa-check"></i> Analyse Concurrentielle</li>
+                        <li><i class="fas fa-check"></i> Rapports détaillés</li>
+                        <li><i class="fas fa-check"></i> Projets illimités</li>
+                        <li><i class="fas fa-check"></i> 50GB stockage</li>
+                        <li><i class="fas fa-check"></i> Export PDF</li>
+                        <li><i class="fas fa-check"></i> Support prioritaire</li>
+                        <li><i class="fas fa-times"></i> Accès API</li>
+                    </ul>
+                    <div class="pricing-actions">
+                        <button class="btn btn-primary btn-block" id="subscribeProBtn" data-plan="pro">
+                            <i class="fas fa-credit-card"></i> Souscrire maintenant
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Enterprise Plan -->
+                <div class="pricing-card-full">
+                    <div class="pricing-card-header">
+                        <h3>Entreprise</h3>
+                        <div class="pricing-badge">Premium</div>
+                    </div>
+                    <div class="pricing-price-full">
+                        <span class="price-amount">300€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens-full">
+                        <i class="fas fa-coins"></i>
+                        <span>5000 tokens/mois + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features-full">
+                        <li><i class="fas fa-check"></i> Tout inclus</li>
+                        <li><i class="fas fa-check"></i> Toutes les analyses avancées</li>
+                        <li><i class="fas fa-check"></i> Matrice d'intégration</li>
+                        <li><i class="fas fa-check"></i> Simulateur de négociation</li>
+                        <li><i class="fas fa-check"></i> Plan d'action 100 jours</li>
+                        <li><i class="fas fa-check"></i> Rapports personnalisés</li>
+                        <li><i class="fas fa-check"></i> Projets illimités</li>
+                        <li><i class="fas fa-check"></i> Stockage illimité</li>
+                        <li><i class="fas fa-check"></i> Accès API complet</li>
+                        <li><i class="fas fa-check"></i> Support dédié</li>
+                        <li><i class="fas fa-check"></i> Formation incluse</li>
+                    </ul>
+                    <div class="pricing-actions">
+                        <button class="btn btn-outline btn-block" id="subscribeEnterpriseBtn" data-plan="enterprise">
+                            <i class="fas fa-credit-card"></i> Souscrire maintenant
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div class="comparison-table">
+                <h3>Comparatif des formules</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fonctionnalité</th>
+                                <th class="free">Gratuit</th>
+                                <th class="pro">Pro</th>
+                                <th class="enterprise">Entreprise</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Prix mensuel</strong></td>
+                                <td>0€</td>
+                                <td>50€</td>
+                                <td>300€</td>
+                            </tr>
+                            <tr>
+                                <td>Tokens par mois</td>
+                                <td>50 + 1/jour</td>
+                                <td>500 + 1/jour</td>
+                                <td>5000 + 1/jour</td>
+                            </tr>
+                            <tr>
+                                <td>Analyse SWOT</td>
+                                <td><i class="fas fa-check"></i> Limitée</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                            </tr>
+                            <tr>
+                                <td>Porter 5 Forces</td>
+                                <td><i class="fas fa-check"></i> Limitée</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                            </tr>
+                            <tr>
+                                <td>PESTEL</td>
+                                <td><i class="fas fa-check"></i> Limitée</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                                <td><i class="fas fa-check"></i> Complète</td>
+                            </tr>
+                            <tr>
+                                <td>Analyse Concurrentielle</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Rapports détaillés</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Matrice d'intégration</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Simulateur de négociation</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Nombre de projets</td>
+                                <td>3</td>
+                                <td>Illimités</td>
+                                <td>Illimités</td>
+                            </tr>
+                            <tr>
+                                <td>Stockage</td>
+                                <td>2GB</td>
+                                <td>50GB</td>
+                                <td>Illimité</td>
+                            </tr>
+                            <tr>
+                                <td>Export PDF</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Support prioritaire</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Support dédié</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Accès API</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Formation</td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-times"></i></td>
+                                <td><i class="fas fa-check"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Token Packs Section -->
+    <section class="token-packs-section" id="tokens">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Packs de Tokens</span>
+                <h2 class="section-title">
+                    Achetez des tokens à la carte
+                </h2>
+                <p class="section-subtitle">
+                    Complétez votre quota mensuel ou achetez des tokens pour des analyses ponctuelles 
+                    sans engagement.
+                </p>
+            </div>
+            
+            <div class="token-packs-grid">
+                <div class="token-pack-card">
+                    <div class="token-pack-header">
+                        <h3>Découverte</h3>
+                        <div class="token-pack-badge">Pour débuter</div>
+                    </div>
+                    <div class="token-pack-amount">
+                        <i class="fas fa-coins"></i>
+                        <span>100 tokens</span>
+                    </div>
+                    <div class="token-pack-price">
+                        <span class="price">12€</span>
+                        <span class="price-per-token">0,12€/token</span>
+                    </div>
+                    <p class="token-pack-description">
+                        Parfait pour commencer avec des analyses supplémentaires. Idéal pour tester 
+                        nos fonctionnalités avancées.
+                    </p>
+                    <ul class="token-pack-uses">
+                        <li><i class="fas fa-check"></i> 1 analyse SWOT complète</li>
+                        <li><i class="fas fa-check"></i> 2 analyses de base</li>
+                        <li><i class="fas fa-check"></i> 1 rapport simplifié</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="discovery">
+                        <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                    </button>
+                </div>
+                
+                <div class="token-pack-card">
+                    <div class="token-pack-header">
+                        <h3>Boost</h3>
+                        <div class="token-pack-badge">Pour les Pros</div>
+                    </div>
+                    <div class="token-pack-amount">
+                        <i class="fas fa-coins"></i>
+                        <span>300 tokens</span>
+                    </div>
+                    <div class="token-pack-price">
+                        <span class="price">30€</span>
+                        <span class="price-per-token">0,10€/token</span>
+                    </div>
+                    <p class="token-pack-description">
+                        Idéal pour les analyses avancées comme Porter 5 Forces ou l'analyse 
+                        concurrentielle.
+                    </p>
+                    <ul class="token-pack-uses">
+                        <li><i class="fas fa-check"></i> 1 analyse Porter 5 Forces</li>
+                        <li><i class="fas fa-check"></i> 3 analyses avancées</li>
+                        <li><i class="fas fa-check"></i> 1 analyse concurrentielle</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="boost">
+                        <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                    </button>
+                </div>
+                
+                <div class="token-pack-card best-value">
+                    <div class="best-value-ribbon">Meilleur rapport</div>
+                    <div class="token-pack-header">
+                        <h3>Expert</h3>
+                        <div class="token-pack-badge">Économique</div>
+                    </div>
+                    <div class="token-pack-amount">
+                        <i class="fas fa-coins"></i>
+                        <span>600 tokens</span>
+                    </div>
+                    <div class="token-pack-price">
+                        <span class="price">55€</span>
+                        <span class="price-per-token">0,092€/token</span>
+                    </div>
+                    <p class="token-pack-description">
+                        Alternative sans engagement pour les utilisateurs Pro. Économisez 
+                        plus de 30% par rapport à l'achat de tokens à l'unité.
+                    </p>
+                    <ul class="token-pack-uses">
+                        <li><i class="fas fa-check"></i> 2 analyses Porter 5 Forces</li>
+                        <li><i class="fas fa-check"></i> 6 analyses avancées</li>
+                        <li><i class="fas fa-check"></i> 2 analyses concurrentielles</li>
+                    </ul>
+                    <button class="btn btn-primary btn-block" id="buyPackBtn" data-pack="expert">
+                        <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                    </button>
+                </div>
+                
+                <div class="token-pack-card">
+                    <div class="token-pack-header">
+                        <h3>Rapport unique</h3>
+                        <div class="token-pack-badge">Spécial</div>
+                    </div>
+                    <div class="token-pack-amount">
+                        <i class="fas fa-coins"></i>
+                        <span>250 tokens</span>
+                    </div>
+                    <div class="token-pack-price">
+                        <span class="price">25€</span>
+                        <span class="price-per-token">0,10€/token</span>
+                    </div>
+                    <p class="token-pack-description">
+                        Spécialement conçu pour débloquer un rapport détaillé avec 
+                        recommandations stratégiques.
+                    </p>
+                    <ul class="token-pack-uses">
+                        <li><i class="fas fa-check"></i> 1 rapport détaillé complet</li>
+                        <li><i class="fas fa-check"></i> Avec recommandations</li>
+                        <li><i class="fas fa-check"></i> Plan d'action inclus</li>
+                    </ul>
+                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="unique_report">
+                        <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Token Calculator -->
+            <div class="token-calculator">
+                <h3>Calculateur de tokens</h3>
+                <p>Estimez combien de tokens vous avez besoin pour vos analyses.</p>
+                <div class="calculator-grid">
+                    <div class="calculator-item">
+                        <label for="swotCount">Analyse SWOT</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('swotCount')">-</button>
+                            <input type="number" id="swotCount" min="0" value="0">
+                            <button class="increment" onclick="increment('swotCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="porterCount">Porter 5 Forces</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('porterCount')">-</button>
+                            <input type="number" id="porterCount" min="0" value="0">
+                            <button class="increment" onclick="increment('porterCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="pestelCount">PESTEL</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('pestelCount')">-</button>
+                            <input type="number" id="pestelCount" min="0" value="0">
+                            <button class="increment" onclick="increment('pestelCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="competitiveCount">Analyse Concurrentielle</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('competitiveCount')">-</button>
+                            <input type="number" id="competitiveCount" min="0" value="0">
+                            <button class="increment" onclick="increment('competitiveCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="reportCount">Rapport Détaillé</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('reportCount')">-</button>
+                            <input type="number" id="reportCount" min="0" value="0">
+                            <button class="increment" onclick="increment('reportCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                </div>
+                <div class="calculator-total">
+                    <span>Total estimé:</span>
+                    <span id="totalTokens">0 tokens</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">FAQ</span>
+                <h2 class="section-title">
+                    Questions fréquentes sur la tarification
+                </h2>
+            </div>
+            
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Comment fonctionne le système de tokens ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Chaque analyse consomme un certain nombre de tokens selon sa complexité. Vous pouvez obtenir des tokens via un abonnement mensuel ou en achetant des packs à la carte. Les tokens non utilisés sont conservés jusqu'à la fin de votre abonnement.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Puis-je changer de formule à tout moment ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Oui, vous pouvez passer d'une formule à une autre à tout moment. La modification prend effet immédiatement, et vos tokens sont recalculés selon votre nouvelle formule.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Que se passe-t-il si je n'utilise pas tous mes tokens ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Les tokens non utilisés à la fin du mois ne sont pas perdus. Ils restent disponibles dans votre compte tant que votre abonnement est actif. Vous pouvez les utiliser les mois suivants.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Puis-je acheter des tokens sans abonnement ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Oui, nos packs de tokens sont disponibles sans abonnement. Vous pouvez acheter des tokens à la carte pour des analyses ponctuelles. Les tokens achetés ne jamais n'expirent pas.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Quelle formule est faite pour moi ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Si vous débutez, la formule Gratuite est parfaite pour tester. Pour une utilisation régulière, la formule Pro offre le meilleur rapport qualité-prix. Pour les entreprises avec des besoins intensifs, la formule Entreprise est idéale.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h4>Offrez-vous des remises pour les équipes ?</h4>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Oui, nous proposons des remises pour les entreprises avec plusieurs utilisateurs. Contactez-nous pour obtenir une offre personnalisée.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Prêt à commencer ?</h2>
+                <p>Choisissez votre formule et commencez vos analyses dès aujourd'hui.</p>
+                <div class="cta-actions">
+                    <a href="register.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus"></i> Créer un compte gratuit
+                    </a>
+                    <a href="#" class="btn btn-outline btn-lg" onclick="scrollToSubscriptions()">
+                        <i class="fas fa-arrow-down"></i> Voir les abonnements
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="/#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="login.html">Connexion</a></li>
+                        <li><a href="register.html">Inscription</a></li>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for Subscription -->
+    <div class="modal" id="subscriptionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Souscrire à l'abonnement</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <p>Veuillez confirmer votre choix avant de procéder au paiement.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="modalCancel">Annuler</button>
+                <button class="btn btn-primary" id="modalConfirm">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Token Pack -->
+    <div class="modal" id="tokenPackModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tokenModalTitle">Acheter un pack de tokens</h3>
+                <button class="modal-close" id="tokenModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="tokenModalBody">
+                <p>Veuillez confirmer votre achat.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="tokenModalCancel">Annuler</button>
+                <button class="btn btn-primary" id="tokenModalConfirm">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/stripe-service.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/pricing.js"></script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPAI Strategy - L'intelligence stratégique pour votre croissance externe</title>
+    <meta name="description" content="DPAI Strategy offre des solutions d'analyse stratégique avancée pour la croissance externe. Abonnements flexibles, système de tokens, et outils puissants pour les professionnels du M&A.">
+    
+    <!-- Firebase et configuration seront chargés à la fin du body -->
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="#services" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
+                <li><a href="#how-it-works" class="nav-link">Comment ça marche</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-star"></i>
+                    <span>N°1 en analyse stratégique</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Transformez votre 
+                    <span class="gradient-text">croissance externe</span>
+                </h1>
+                 
+                <p class="hero-subtitle">
+                    DPAI vous offre les outils d'analyse les plus avancés pour identifier 
+                    les opportunités de croissance, analyser vos concurrents et optimiser 
+                    votre stratégie d'acquisition.
+                </p>
+                
+                <div class="hero-actions">
+                    <a href="register.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i> Commencer gratuitement
+                    </a>
+                    <a href="pricing.html" class="btn btn-outline btn-lg">
+                        <i class="fas fa-tag"></i> Voir les tarifs
+                    </a>
+                </div>
+                
+                <div class="hero-trust">
+                    <i class="fas fa-check-circle"></i>
+                    <span>+1000 entreprises nous font confiance</span>
+                </div>
+            </div>
+            
+            <div class="hero-image">
+                <div class="dashboard-mockup">
+                    <div class="mockup-header">
+                        <div class="mockup-dot red"></div>
+                        <div class="mockup-dot yellow"></div>
+                        <div class="mockup-dot green"></div>
+                    </div>
+                    <div class="mockup-content">
+                        <div class="mockup-stat">
+                            <span class="mockup-stat-value">50</span>
+                            <span class="mockup-stat-label">Tokens restants</span>
+                        </div>
+                        <div class="mockup-chart">
+                            <div class="chart-bar" style="--height: 60%"></div>
+                            <div class="chart-bar" style="--height: 80%"></div>
+                            <div class="chart-bar" style="--height: 45%"></div>
+                            <div class="chart-bar" style="--height: 90%"></div>
+                            <div class="chart-bar" style="--height: 70%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Fonctionnalités</span>
+                <h2 class="section-title">
+                    Des outils puissants pour 
+                    <span class="gradient-text">l'analyse stratégique</span>
+                </h2>
+                <p class="section-subtitle">
+                    Notre plateforme combine l'intelligence artificielle et l'expertise 
+                    humaine pour vous offrir des analyses précises et actionnables.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-swimming-pool"></i>
+                    </div>
+                    <h3 class="feature-title">Analyse SWOT</h3>
+                    <p class="feature-description">
+                        Identifiez les forces, faiblesses, opportunités et menaces de votre entreprise 
+                        ou de vos cibles d'acquisition.
+                    </p>
+                    <a href="services.html#swot" class="feature-link service-link" data-service="swot">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+                
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3 class="feature-title">Porter 5 Forces</h3>
+                    <p class="feature-description">
+                        Analysez la compétitivité d'un secteur en évaluant les cinq forces 
+                        qui déterminent la rentabilité.
+                    </p>
+                    <a href="services.html#porter" class="feature-link service-link" data-service="porter">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+                
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <h3 class="feature-title">Analyse PESTEL</h3>
+                    <p class="feature-description">
+                        Évaluez l'impact des facteurs politiques, économiques, socioculturels, 
+                        technologiques, environnementaux et légaux.
+                    </p>
+                    <a href="services.html#pestel" class="feature-link service-link" data-service="pestel">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+                
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="feature-title">Analyse Concurrentielle</h3>
+                    <p class="feature-description">
+                        Comparez vos performances avec celles de vos concurrents directs 
+                        et identifiez vos avantages concurrentiels.
+                    </p>
+                    <a href="services.html#competitive" class="feature-link service-link" data-service="competitive">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+                
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Rapports Détaillés</h3>
+                    <p class="feature-description">
+                        Générez des rapports complets avec recommandations stratégiques 
+                        et plans d'action concrets.
+                    </p>
+                    <a href="services.html#reports" class="feature-link service-link" data-service="reports">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+                
+                <article class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Tableau de Bord</h3>
+                    <p class="feature-description">
+                        Suivez vos analyses, vos tokens et vos performances en temps réel 
+                        avec notre interface intuitive.
+                    </p>
+                    <a href="services.html#dashboard" class="feature-link service-link" data-service="dashboard">
+                        En savoir plus <i class="fas fa-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Overview -->
+    <section class="services-overview" id="services">
+        <div class="container">
+            <div class="services-grid">
+                <div class="service-item">
+                    <div class="service-count">10+</div>
+                    <h3>Types d'analyses</h3>
+                    <p>Des analyses complètes couvrant tous les aspects de la croissance externe.</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-count">50</div>
+                    <h3>Tokens gratuits</h3>
+                    <p>Pour commencer immédiatement avec notre offre gratuite.</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-count">24/7</div>
+                    <h3>Support</h3>
+                    <p>Assistance prioritaire pour nos utilisateurs premium.</p>
+                </div>
+                <div class="service-item">
+                    <div class="service-count">100%</div>
+                    <h3>Personnalisé</h3>
+                    <p>Des solutions adaptées à vos besoins spécifiques.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Comment ça marche</span>
+                <h2 class="section-title">
+                    Simple, rapide et efficace
+                </h2>
+            </div>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3>Inscription</h3>
+                    <p>Créez votre compte gratuitement et recevez 50 tokens pour démarrer.</p>
+                </div>
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Choisissez une analyse</h3>
+                    <p>Sélectionnez le type d'analyse dont vous avez besoin.</p>
+                </div>
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3>Utilisez vos tokens</h3>
+                    <p>Dépensez vos tokens pour obtenir vos résultats instantanément.</p>
+                </div>
+                <div class="step-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Obtenez vos résultats</h3>
+                    <p>Consultez vos analyses détaillées et prenez des décisions éclairées.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Preview -->
+    <section class="pricing-preview">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Tarification</span>
+                <h2 class="section-title">
+                    Des formules adaptées à vos besoins
+                </h2>
+                <p class="section-subtitle">
+                    Choisissez entre nos abonnements ou achetez des packs de tokens à la carte.
+                </p>
+            </div>
+            
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="pricing-card-header">
+                        <h3>Gratuit</h3>
+                        <div class="pricing-badge">Gratuit</div>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price-amount">0€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens">
+                        <i class="fas fa-coins"></i>
+                        <span>50 tokens + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Analyses de base</li>
+                        <li><i class="fas fa-check"></i> Accès limité</li>
+                        <li><i class="fas fa-check"></i> 3 projets</li>
+                    </ul>
+                    <a href="pricing.html" class="btn btn-outline">Voir les détails</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="pricing-card-header">
+                        <h3>Pro</h3>
+                        <div class="pricing-badge">Le plus populaire</div>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price-amount">50€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens">
+                        <i class="fas fa-coins"></i>
+                        <span>500 tokens/mois + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Toutes les analyses</li>
+                        <li><i class="fas fa-check"></i> Rapports détaillés</li>
+                        <li><i class="fas fa-check"></i> Projets illimités</li>
+                        <li><i class="fas fa-check"></i> Support prioritaire</li>
+                    </ul>
+                    <a href="pricing.html" class="btn btn-primary">Choisir ce plan</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <div class="pricing-card-header">
+                        <h3>Entreprise</h3>
+                        <div class="pricing-badge">Premium</div>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price-amount">300€</span>
+                        <span class="price-period">/mois</span>
+                    </div>
+                    <div class="pricing-tokens">
+                        <i class="fas fa-coins"></i>
+                        <span>5000 tokens/mois + 1/jour</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><i class="fas fa-check"></i> Tout inclus</li>
+                        <li><i class="fas fa-check"></i> Accès API</li>
+                        <li><i class="fas fa-check"></i> Support dédié</li>
+                        <li><i class="fas fa-check"></i> Formation incluse</li>
+                    </ul>
+                    <a href="pricing.html" class="btn btn-outline">Voir les détails</a>
+                </div>
+            </div>
+            
+            <div class="token-packs-preview">
+                <h3>Packs de tokens</h3>
+                <div class="token-packs">
+                    <div class="token-pack">
+                        <div class="token-pack-name">Découverte</div>
+                        <div class="token-pack-amount">100 tokens</div>
+                        <div class="token-pack-price">12€</div>
+                    </div>
+                    <div class="token-pack">
+                        <div class="token-pack-name">Boost</div>
+                        <div class="token-pack-amount">300 tokens</div>
+                        <div class="token-pack-price">30€</div>
+                    </div>
+                    <div class="token-pack">
+                        <div class="token-pack-name">Expert</div>
+                        <div class="token-pack-amount">600 tokens</div>
+                        <div class="token-pack-price">55€</div>
+                        <div class="token-pack-badge">Meilleur rapport</div>
+                    </div>
+                    <div class="token-pack">
+                        <div class="token-pack-name">Rapport unique</div>
+                        <div class="token-pack-amount">250 tokens</div>
+                        <div class="token-pack-price">25€</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Témoignages</span>
+                <h2 class="section-title">
+                    Ils nous font confiance
+                </h2>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "DPAI a révolutionné notre approche de la croissance externe. 
+                        Les analyses sont précises et les recommandations toujours pertinentes."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">JD</div>
+                        <div class="author-info">
+                            <span class="author-name">Jean Dupont</span>
+                            <span class="author-title">CEO, TechCorp</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "Le système de tokens est génial. On ne paie que pour ce qu'on utilise, 
+                        et les abonnements offrent un excellent rapport qualité-prix."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">MM</div>
+                        <div class="author-info">
+                            <span class="author-name">Marie Martin</span>
+                            <span class="author-title">Directrice Stratégie, InnoVate</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "L'analyse Porter 5 Forces nous a aidé à identifier des opportunités 
+                        que nous n'aurions jamais vues autrement."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">PR</div>
+                        <div class="author-info">
+                            <span class="author-name">Pierre Rossi</span>
+                            <span class="author-title">Directeur Général, GrowthPartners</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Prêt à transformer votre croissance externe ?</h2>
+                <p>Rejoignez des centaines d'entreprises qui utilisent déjà DPAI pour prendre des décisions stratégiques éclairées.</p>
+                <div class="cta-actions">
+                    <a href="register.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus"></i> Créer un compte gratuit
+                    </a>
+                    <a href="pricing.html" class="btn btn-outline btn-lg">
+                        <i class="fas fa-tag"></i> Comparer les formules
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                        <li><a href="#how-it-works">Comment ça marche</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="login.html">Connexion</a></li>
+                        <li><a href="register.html">Inscription</a></li>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                        <li><a href="token-shop.html">Acheter des tokens</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                        <li><a href="cookies.html">Politique des cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
+                <p>Développé avec <i class="fas fa-heart"></i> pour les professionnels de la croissance externe.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Firebase SDK (doit être chargé AVANT firebase-config.js) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+    
+    <!-- Configuration Firebase (doit être chargée APRES les SDK Firebase) -->
+    <script src="js/firebase-config.js"></script>
+    
+    <!-- Autres scripts (doivent être chargés APRES firebase-config.js) -->
+    <script src="js/auth.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/stripe-service.js"></script>
+    <script src="js/service-modal.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

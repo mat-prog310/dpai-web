@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - DPAI</title>
+    <meta name="description" content="Votre tableau de bord personnel DPAI. Suivez vos tokens, vos analyses et vos performances.">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+    
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="services.html" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn" style="display: none;">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn" style="display: none;">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="page-header" id="dashboardHeader" style="display: none;">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Accueil</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Tableau de bord</span>
+            </div>
+            <h1>Tableau de bord</h1>
+            <p>Bienvenue, <span id="welcomeUserName">Utilisateur</span> ! Voici votre espace personnel.</p>
+        </div>
+    </section>
+
+    <!-- Unauthenticated View -->
+    <section class="unauthenticated-view" id="unauthenticatedView">
+        <div class="container">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="empty-state-title">Accès réservé</h2>
+                <p class="empty-state-message">
+                    Vous devez être connecté pour accéder au tableau de bord. 
+                    Créez un compte gratuit ou connectez-vous pour commencer.
+                </p>
+                <div class="empty-state-actions">
+                    <a href="register.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus"></i> Créer un compte
+                    </a>
+                    <a href="login.html" class="btn btn-outline btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Se connecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Content -->
+    <section class="dashboard-content" id="dashboardContent" style="display: none;">
+        <!-- Welcome Section -->
+        <div class="container">
+            <div class="dashboard-header">
+                <div class="dashboard-welcome">
+                    <h2>Bonjour, <span id="dashboardUserName">Utilisateur</span> !</h2>
+                    <p>Voici un aperçu de votre activité et de vos ressources.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="container">
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-value" id="availableTokens">0</div>
+                        <div class="stat-label">Tokens disponibles</div>
+                        <div class="progress-bar" style="margin-top: var(--spacing-sm);">
+                            <div class="progress-bar-fill" id="tokenProgress" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-bar-label">
+                            <span><span id="usedTokens">0</span> utilisés</span>
+                            <span><span id="totalTokens">0</span> total</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-value" id="totalAnalyses">0</div>
+                        <div class="stat-label">Analyses réalisées</div>
+                        <div class="stat-trend">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+<span id="monthlyAnalyses">0</span> ce mois</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-value">+1</div>
+                        <div class="stat-label">Token par jour</div>
+                        <div class="stat-info">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Bonus quotidien</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-value" id="userPlan">Gratuit</div>
+                        <div class="stat-label">Votre abonnement</div>
+                        <div class="stat-actions">
+                            <a href="pricing.html" class="btn btn-sm btn-outline">
+                                <i class="fas fa-arrow-up"></i> Passer Pro
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Main Dashboard -->
+        <section class="dashboard-main-section">
+            <div class="container">
+                <div class="dashboard-main">
+                    <!-- Left Column -->
+                    <div class="dashboard-column">
+                        <!-- Quick Actions -->
+                        <div class="card dashboard-content">
+                            <div class="card-header">
+                                <h3 class="card-title">Actions rapides</h3>
+                                <p class="card-subtitle">Lancez une nouvelle analyse en un clic</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-actions">
+                                    <button class="quick-action-btn" onclick="startAnalysis('swot')">
+                                        <div class="quick-action-icon">
+                                            <i class="fas fa-swimming-pool"></i>
+                                        </div>
+                                        <span>SWOT</span>
+                                        <span class="quick-action-tokens">5 tokens</span>
+                                    </button>
+                                    <button class="quick-action-btn" onclick="startAnalysis('porter')">
+                                        <div class="quick-action-icon">
+                                            <i class="fas fa-project-diagram"></i>
+                                        </div>
+                                        <span>Porter 5 Forces</span>
+                                        <span class="quick-action-tokens">20 tokens</span>
+                                    </button>
+                                    <button class="quick-action-btn" onclick="startAnalysis('pestel')">
+                                        <div class="quick-action-icon">
+                                            <i class="fas fa-globe-americas"></i>
+                                        </div>
+                                        <span>PESTEL</span>
+                                        <span class="quick-action-tokens">15 tokens</span>
+                                    </button>
+                                    <button class="quick-action-btn" onclick="startAnalysis('competitive')">
+                                        <div class="quick-action-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <span>Analyse Concurrentielle</span>
+                                        <span class="quick-action-tokens">20 tokens</span>
+                                    </button>
+                                </div>
+                                <div class="quick-actions-info">
+                                    <p><i class="fas fa-info-circle"></i> Les coûts en tokens varient selon votre plan.</p>
+                                    <a href="services.html" class="btn btn-sm btn-outline">
+                                        <i class="fas fa-list"></i> Voir tous les services
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Analyses -->
+                        <div class="card dashboard-content">
+                            <div class="dashboard-section-title">
+                                <h3>Dernières analyses</h3>
+                                <a href="#" id="showAllAnalyses">Toutes les analyses <i class="fas fa-arrow-right"></i></a>
+                            </div>
+                            <div class="card-body">
+                                <div class="analysis-list" id="recentAnalyses">
+                                    <!-- Les analyses seront chargées dynamiquement -->
+                                    <div class="empty-state small">
+                                        <div class="empty-state-icon">
+                                            <i class="fas fa-chart-bar"></i>
+                                        </div>
+                                        <p>Vous n'avez pas encore réalisé d'analyse.</p>
+                                        <p class="empty-state-message">Commencez par lancer votre première analyse !</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column -->
+                    <div class="dashboard-column">
+                        <!-- Token Summary -->
+                        <div class="card dashboard-sidebar">
+                            <div class="card-header">
+                                <h3 class="card-title">Résumé des tokens</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="token-summary">
+                                    <div class="token-summary-item">
+                                        <span>Disponibles</span>
+                                        <span class="token-summary-value" id="tokenAvailable">0</span>
+                                    </div>
+                                    <div class="token-summary-item">
+                                        <span>Utilisés ce mois</span>
+                                        <span class="token-summary-value" id="tokenUsedMonthly">0</span>
+                                    </div>
+                                    <div class="token-summary-item">
+                                        <span>Quota mensuel</span>
+                                        <span class="token-summary-value" id="tokenMonthlyLimit">50</span>
+                                    </div>
+                                </div>
+                                <div class="token-actions">
+                                    <a href="token-shop.html" class="btn btn-primary btn-block">
+                                        <i class="fas fa-plus"></i> Acheter des tokens
+                                    </a>
+                                    <a href="pricing.html" class="btn btn-outline btn-block">
+                                        <i class="fas fa-sync"></i> Changer de plan
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Token History -->
+                        <div class="card dashboard-sidebar">
+                            <div class="card-header">
+                                <h3 class="card-title">Historique des tokens</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="token-history" id="tokenHistory">
+                                    <!-- L'historique sera chargé dynamiquement -->
+                                    <div class="empty-state small">
+                                        <div class="empty-state-icon">
+                                            <i class="fas fa-history"></i>
+                                        </div>
+                                        <p>Pas d'historique disponible.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Loyalty Program -->
+                        <div class="card dashboard-sidebar">
+                            <div class="card-header">
+                                <h3 class="card-title">Programme de fidélité</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="loyalty-info">
+                                    <div class="loyalty-stat">
+                                        <div class="loyalty-stat-value" id="loyaltyTokens">0</div>
+                                        <div class="loyalty-stat-label">Tokens de fidélité</div>
+                                    </div>
+                                    <div class="loyalty-stats">
+                                        <div class="loyalty-stat-item">
+                                            <i class="fas fa-chart-line"></i>
+                                            <span>Analyses totales: <strong id="loyaltyTotalAnalyses">0</strong></span>
+                                        </div>
+                                        <div class="loyalty-stat-item">
+                                            <i class="fas fa-calendar-month"></i>
+                                            <span>Ce mois: <strong id="loyaltyMonthlyAnalyses">0</strong></span>
+                                        </div>
+                                    </div>
+                                    <p class="loyalty-description">
+                                        Gagnez des tokens de fidélité à chaque analyse. 
+                                        Plus vous utilisez DPAI, plus vous obtenez de bonus !
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Recommendations Section -->
+        <section class="recommendations-section" style="display: none;">
+            <div class="container">
+                <div class="card dashboard-content">
+                    <div class="dashboard-section-title">
+                        <h3>Recommandations personnalisées</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="recommendations-grid" id="recommendations">
+                            <!-- Les recommandations seront chargées dynamiquement -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <!-- Quick Analysis Modal -->
+    <div class="modal" id="analysisModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="analysisModalTitle">Lancer une analyse</h3>
+                <button class="modal-close" id="analysisModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="analysisModalBody">
+                <form id="analysisForm" class="analysis-form">
+                    <div class="form-group">
+                        <label class="form-label" for="analysisType">Type d'analyse</label>
+                        <select class="form-select" id="analysisType" required>
+                            <option value="">Sélectionnez un type</option>
+                            <option value="swot">Analyse SWOT (5 tokens)</option>
+                            <option value="porter">Porter 5 Forces (20 tokens)</option>
+                            <option value="pestel">Analyse PESTEL (15 tokens)</option>
+                            <option value="competitive">Analyse Concurrentielle (20 tokens)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="analysisName">Nom de l'analyse</label>
+                        <input type="text" class="form-input" id="analysisName" placeholder="Ex: Analyse SWOT - Entreprise X" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="analysisDescription">Description (optionnel)</label>
+                        <textarea class="form-textarea" id="analysisDescription" placeholder="Décrivez ce que vous souhaitez analyser..."></textarea>
+                    </div>
+                    
+                    <!-- Conteneur pour les champs spécifiques selon le type d'analyse -->
+                    <div class="form-group" id="analysisSpecificFields"></div>
+                    
+                    <div class="form-group">
+                        <div class="payment-summary">
+                            <h4>Coût estimé</h4>
+                            <div class="payment-summary-item">
+                                <span class="payment-summary-label">Type d'analyse</span>
+                                <span class="payment-summary-value" id="estimatedAnalysisType">-</span>
+                            </div>
+                            <div class="payment-summary-item">
+                                <span class="payment-summary-label">Tokens estimés</span>
+                                <span class="payment-summary-value" id="estimatedTokens">0</span>
+                            </div>
+                            <div class="payment-summary-item">
+                                <span class="payment-summary-label">Vos tokens disponibles</span>
+                                <span class="payment-summary-value" id="userAvailableTokens">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning" id="insufficientTokensAlert" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div class="alert-content">
+                            <span class="alert-title">Tokens insuffisants</span>
+                            <span class="alert-message">Vous n'avez pas assez de tokens pour cette analyse.</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" id="analysisModalCancel">Annuler</button>
+                <button type="submit" class="btn btn-primary" id="startAnalysisBtn" form="analysisForm">
+                    <i class="fas fa-play"></i> Lancer l'analyse
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="/#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                        <li><a href="profile.html">Profil</a></li>
+                        <li><a href="token-shop.html">Acheter des tokens</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/stripe-service.js"></script>
+    <script src="js/analyses.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

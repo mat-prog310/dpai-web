@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique de Tokens - DPAI | Achetez des tokens</title>
+    <meta name="description" content="Achetez des packs de tokens pour effectuer plus d'analyses stratégiques sur DPAI.">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="services.html" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Accueil</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="pricing.html">Tarifs</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Boutique de Tokens</span>
+            </div>
+            <h1>Boutique de Tokens</h1>
+            <p>Achetez des packs de tokens pour effectuer plus d'analyses sans attente</p>
+        </div>
+    </section>
+
+    <!-- Token Shop Section -->
+    <section class="token-shop-section">
+        <div class="container">
+            <!-- User Token Balance -->
+            <div class="token-balance-card" id="tokenBalanceCard" style="display: none;">
+                <div class="token-balance">
+                    <div class="token-balance-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="token-balance-info">
+                        <span class="token-balance-label">Vos tokens</span>
+                        <span class="token-balance-value" id="userTokens">0</span>
+                    </div>
+                </div>
+                <div class="token-balance-actions">
+                    <a href="dashboard.html" class="btn btn-outline btn-sm">
+                        <i class="fas fa-tachometer-alt"></i> Tableau de bord
+                    </a>
+                    <a href="pricing.html" class="btn btn-primary btn-sm">
+                        <i class="fas fa-credit-card"></i> Voir les abonnements
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Unauthenticated View -->
+            <div class="unauthenticated-view" id="unauthenticatedTokenShop" style="display: none;">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="alert-content">
+                        <span class="alert-title">Attention</span>
+                        <span class="alert-message">Vous devez être connecté pour acheter des tokens.</span>
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2 class="empty-state-title">Connectez-vous pour acheter des tokens</h2>
+                    <p class="empty-state-message">
+                        Créez un compte gratuit ou connectez-vous pour accéder à la boutique de tokens.
+                    </p>
+                    <div class="empty-state-actions">
+                        <a href="register.html" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus"></i> Créer un compte
+                        </a>
+                        <a href="login.html" class="btn btn-outline btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Se connecter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Token Packs -->
+            <div id="tokenPacksSection">
+                <div class="section-header">
+                    <span class="section-tag">Packs de Tokens</span>
+                    <h2 class="section-title">
+                        Choisissez votre pack
+                    </h2>
+                    <p class="section-subtitle">
+                        Achetez des tokens à la carte pour compléter votre quota ou effectuer des analyses ponctuelles
+                    </p>
+                </div>
+                
+                <div class="token-packs-grid">
+                    <div class="token-pack-card">
+                        <div class="token-pack-header">
+                            <h3>Découverte</h3>
+                            <div class="token-pack-badge">Pour débuter</div>
+                        </div>
+                        <div class="token-pack-amount">
+                            <i class="fas fa-coins"></i>
+                            <span>100 tokens</span>
+                        </div>
+                        <div class="token-pack-price">
+                            <span class="price">12€</span>
+                            <span class="price-per-token">0,12€/token</span>
+                        </div>
+                        <p class="token-pack-description">
+                            Parfait pour commencer avec des analyses supplémentaires. Idéal pour tester 
+                            nos fonctionnalités avancées.
+                        </p>
+                        <ul class="token-pack-uses">
+                            <li><i class="fas fa-check"></i> 1 analyse SWOT complète</li>
+                            <li><i class="fas fa-check"></i> 2 analyses de base</li>
+                            <li><i class="fas fa-check"></i> 1 rapport simplifié</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="discovery">
+                            <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                        </button>
+                    </div>
+                    
+                    <div class="token-pack-card">
+                        <div class="token-pack-header">
+                            <h3>Boost</h3>
+                            <div class="token-pack-badge">Pour les Pros</div>
+                        </div>
+                        <div class="token-pack-amount">
+                            <i class="fas fa-coins"></i>
+                            <span>300 tokens</span>
+                        </div>
+                        <div class="token-pack-price">
+                            <span class="price">30€</span>
+                            <span class="price-per-token">0,10€/token</span>
+                        </div>
+                        <p class="token-pack-description">
+                            Idéal pour les analyses avancées comme Porter 5 Forces ou l'analyse 
+                            concurrentielle.
+                        </p>
+                        <ul class="token-pack-uses">
+                            <li><i class="fas fa-check"></i> 1 analyse Porter 5 Forces</li>
+                            <li><i class="fas fa-check"></i> 3 analyses avancées</li>
+                            <li><i class="fas fa-check"></i> 1 analyse concurrentielle</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="boost">
+                            <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                        </button>
+                    </div>
+                    
+                    <div class="token-pack-card best-value">
+                        <div class="best-value-ribbon">Meilleur rapport</div>
+                        <div class="token-pack-header">
+                            <h3>Expert</h3>
+                            <div class="token-pack-badge">Économique</div>
+                        </div>
+                        <div class="token-pack-amount">
+                            <i class="fas fa-coins"></i>
+                            <span>600 tokens</span>
+                        </div>
+                        <div class="token-pack-price">
+                            <span class="price">55€</span>
+                            <span class="price-per-token">0,092€/token</span>
+                        </div>
+                        <p class="token-pack-description">
+                            Alternative sans engagement pour les utilisateurs Pro. Économisez 
+                            plus de 30% par rapport à l'achat de tokens à l'unité.
+                        </p>
+                        <ul class="token-pack-uses">
+                            <li><i class="fas fa-check"></i> 2 analyses Porter 5 Forces</li>
+                            <li><i class="fas fa-check"></i> 6 analyses avancées</li>
+                            <li><i class="fas fa-check"></i> 2 analyses concurrentielles</li>
+                        </ul>
+                        <button class="btn btn-primary btn-block" id="buyPackBtn" data-pack="expert">
+                            <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                        </button>
+                    </div>
+                    
+                    <div class="token-pack-card">
+                        <div class="token-pack-header">
+                            <h3>Rapport unique</h3>
+                            <div class="token-pack-badge">Spécial</div>
+                        </div>
+                        <div class="token-pack-amount">
+                            <i class="fas fa-coins"></i>
+                            <span>250 tokens</span>
+                        </div>
+                        <div class="token-pack-price">
+                            <span class="price">25€</span>
+                            <span class="price-per-token">0,10€/token</span>
+                        </div>
+                        <p class="token-pack-description">
+                            Spécialement conçu pour débloquer un rapport détaillé avec 
+                            recommandations stratégiques.
+                        </p>
+                        <ul class="token-pack-uses">
+                            <li><i class="fas fa-check"></i> 1 rapport détaillé complet</li>
+                            <li><i class="fas fa-check"></i> Avec recommandations</li>
+                            <li><i class="fas fa-check"></i> Plan d'action inclus</li>
+                        </ul>
+                        <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="unique_report">
+                            <i class="fas fa-shopping-cart"></i> Acheter ce pack
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div class="token-comparison">
+                <div class="section-header">
+                    <span class="section-tag">Comparatif</span>
+                    <h2 class="section-title">
+                        Comparez nos packs
+                    </h2>
+                </div>
+                
+                <div class="comparison-table">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Critère</th>
+                                    <th>Découverte</th>
+                                    <th>Boost</th>
+                                    <th class="best-value-header">Expert</th>
+                                    <th>Rapport unique</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Nombre de tokens</td>
+                                    <td>100</td>
+                                    <td>300</td>
+                                    <td>600</td>
+                                    <td>250</td>
+                                </tr>
+                                <tr>
+                                    <td>Prix</td>
+                                    <td>12€</td>
+                                    <td>30€</td>
+                                    <td>55€</td>
+                                    <td>25€</td>
+                                </tr>
+                                <tr>
+                                    <td>Prix par token</td>
+                                    <td>0,12€</td>
+                                    <td>0,10€</td>
+                                    <td>0,092€</td>
+                                    <td>0,10€</td>
+                                </tr>
+                                <tr>
+                                    <td>Économie</td>
+                                    <td>0%</td>
+                                    <td>17%</td>
+                                    <td>32%</td>
+                                    <td>17%</td>
+                                </tr>
+                                <tr>
+                                    <td>Idéal pour</td>
+                                    <td>Débutants</td>
+                                    <td>Analyses avancées</td>
+                                    <td>Utilisateurs réguliers</td>
+                                    <td>Rapport détaillé</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Token Calculator -->
+            <div class="token-calculator">
+                <h3>Calculateur de tokens</h3>
+                <p>Estimez combien de tokens vous avez besoin pour vos analyses.</p>
+                <div class="calculator-grid">
+                    <div class="calculator-item">
+                        <label for="swotCount">Analyse SWOT</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('swotCount')">-</button>
+                            <input type="number" id="swotCount" min="0" value="0">
+                            <button class="increment" onclick="increment('swotCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="porterCount">Porter 5 Forces</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('porterCount')">-</button>
+                            <input type="number" id="porterCount" min="0" value="0">
+                            <button class="increment" onclick="increment('porterCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="pestelCount">PESTEL</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('pestelCount')">-</button>
+                            <input type="number" id="pestelCount" min="0" value="0">
+                            <button class="increment" onclick="increment('pestelCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="competitiveCount">Analyse Concurrentielle</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('competitiveCount')">-</button>
+                            <input type="number" id="competitiveCount" min="0" value="0">
+                            <button class="increment" onclick="increment('competitiveCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                    <div class="calculator-item">
+                        <label for="reportCount">Rapport Détaillé</label>
+                        <div class="input-group">
+                            <button class="decrement" onclick="decrement('reportCount')">-</button>
+                            <input type="number" id="reportCount" min="0" value="0">
+                            <button class="increment" onclick="increment('reportCount')">+</button>
+                        </div>
+                        <span class="token-cost">0 tokens</span>
+                    </div>
+                </div>
+                <div class="calculator-total">
+                    <span>Total estimé:</span>
+                    <span id="totalTokens">0 tokens</span>
+                </div>
+                
+                <div class="calculator-recommendation">
+                    <p>Recommandation: <strong id="recommendationText">Aucun pack recommandé</strong></p>
+                </div>
+            </div>
+            
+            <!-- FAQ -->
+            <div class="faq-section">
+                <div class="section-header">
+                    <span class="section-tag">FAQ</span>
+                    <h2 class="section-title">
+                        Questions fréquentes sur les tokens
+                    </h2>
+                </div>
+                
+                <div class="faq-grid">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Comment fonctionne le système de tokens ?</h4>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Chaque analyse consomme un certain nombre de tokens selon sa complexité. Vous pouvez obtenir des tokens via un abonnement mensuel ou en achetant des packs à la carte. Les tokens non utilisés sont conservés jusqu'à la fin de votre abonnement.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Puis-je acheter des tokens sans abonnement ?</h4>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Oui, nos packs de tokens sont disponibles sans abonnement. Vous pouvez acheter des tokens à la carte pour des analyses ponctuelles. Les tokens achetés ne jamais n'expirent pas.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Que se passe-t-il si je n'utilise pas tous mes tokens ?</h4>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Les tokens non utilisés à la fin du mois ne sont pas perdus. Ils restent disponibles dans votre compte tant que votre abonnement est actif.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            <h4>Puis-je cumuler les tokens de plusieurs packs ?</h4>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Oui, vous pouvez acheter plusieurs packs de tokens. Les tokens s'ajoutent à votre solde existant et peuvent être utilisés pour n'importe quelle analyse.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Prêt à faire plus d'analyses ?</h2>
+                <p>Choisissez un pack de tokens et continuez vos analyses stratégiques sans interruption.</p>
+                <div class="cta-actions">
+                    <button class="btn btn-primary btn-lg" onclick="openTokenPackModal('expert')">
+                        <i class="fas fa-shopping-cart"></i> Acheter le pack Expert
+                    </button>
+                    <a href="pricing.html" class="btn btn-outline btn-lg">
+                        <i class="fas fa-tag"></i> Voir tous les tarifs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="/#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="login.html">Connexion</a></li>
+                        <li><a href="register.html">Inscription</a></li>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for Token Pack -->
+    <div class="modal" id="tokenPackModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="tokenModalTitle">Acheter un pack de tokens</h3>
+                <button class="modal-close" id="tokenModalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="tokenModalBody">
+                <p>Veuillez confirmer votre achat.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="tokenModalCancel">Annuler</button>
+                <button class="btn btn-primary" id="tokenModalConfirm">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/tokens.js"></script>
+    <script src="js/stripe-service.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/pricing.js"></script>
+    <script src="js/token-shop.js"></script>
+</body>
+</html>
