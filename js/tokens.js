@@ -102,6 +102,28 @@ const TokenPacks = [
   }
 ];
 
+// Plans d'abonnement
+const SubscriptionPlans = [
+  {
+    id: 'pro',
+    name: 'Pro',
+    monthlyPrice: 50.00,
+    annualPrice: 500.00,
+    features: ['Analyses illimitées', '500 tokens/mois', 'Support prioritaire'],
+    stripePriceId: 'price_pro_monthly',
+    stripeAnnualPriceId: 'price_pro_annual'
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    monthlyPrice: 300.00,
+    annualPrice: 3000.00,
+    features: ['Analyses illimitées', '5000 tokens/mois', 'Support 24/7', 'Accès API'],
+    stripePriceId: 'price_enterprise_monthly',
+    stripeAnnualPriceId: 'price_enterprise_annual'
+  }
+];
+
 // Système de fidélité
 class LoyaltySystem {
   static create(userId) {
@@ -371,3 +393,5 @@ async function loadUserTokenData(userId) {
 window.TokenConfig = TokenConfig;
 window.TokenManager = TokenManager;
 window.TokenUtils = TokenUtils;
+window.TokenPacks = TokenPacks;
+window.SubscriptionPlans = SubscriptionPlans;

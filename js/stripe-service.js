@@ -87,12 +87,11 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
       
-      // Note: Pour utiliser redirectToCheckout, vous devez configurer vos Price IDs dans Stripe Dashboard
-      // Remplacez 'VOTRE_PRICE_ID_PACK_XXX' par vos vrais Price IDs
-      const priceId = this.getPriceIdForPack(packId);
+      // Utiliser le Price ID stocké dans le pack
+      const priceId = pack.stripePriceId;
       
       if (!priceId) {
-        throw new Error(`Price ID non configuré pour le pack ${packId}`);
+        throw new Error(`Price ID non configuré pour le pack ${packId}. Ajoutez stripePriceId dans la configuration du pack.`);
       }
       
       const stripe = this.stripeInstance || Stripe(window.stripePublishableKey);
@@ -148,12 +147,17 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
       
-      // Note: Pour utiliser redirectToCheckout, vous devez configurer vos Price IDs dans Stripe Dashboard
-      // Remplacez 'VOTRE_PRICE_ID_PRO' et 'VOTRE_PRICE_ID_ENTERPRISE' par vos vrais Price IDs
-      const priceId = this.getPriceIdForPlan(planId);
+      // Trouver le plan par son ID
+      const plan = SubscriptionPlans.find(p => p.id === planId);
+      if (!plan) {
+        throw new Error(`Plan ${planId} introuvable.`);
+      }
+      
+      // Utiliser le Price ID stocké dans le plan
+      const priceId = plan.stripePriceId;
       
       if (!priceId) {
-        throw new Error(`Price ID non configuré pour le plan ${planId}`);
+        throw new Error(`Price ID non configuré pour le plan ${planId}. Ajoutez stripePriceId dans la configuration du plan.`);
       }
       
       const stripe = this.stripeInstance || Stripe(window.stripePublishableKey);
