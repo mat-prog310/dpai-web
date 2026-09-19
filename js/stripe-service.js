@@ -19,7 +19,7 @@ class StripeService {
     if (this.stripe) return;
     
     const key = publishableKey || window.stripePublishableKey;
-    if (!key || key === 'pk_test_VOTRE_CLE_STRIPE') {
+    if (!key) {
       console.error('Stripe publishable key non configurée. Ajoutez votre clé dans firebase-config.js');
       return;
     }

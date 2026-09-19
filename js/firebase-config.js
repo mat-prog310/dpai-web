@@ -42,7 +42,7 @@ if (typeof firebase !== 'undefined') {
 }
 
 // Configuration Stripe
-window.stripePublishableKey = "pk_test_VOTRE_CLE_STRIPE";
+window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
 
 // Définir les instances globalement (les autres fichiers pourront les utiliser)
 // Utiliser window pour les rendre accessibles partout
@@ -53,4 +53,4 @@ window.firebaseDB = firebase.firestore();
 window.firebaseFunctions = firebase.functions ? firebase.functions() : null;
 
 // Configuration Stripe
-window.stripePublishableKey = "pk_test_VOTRE_CLE_STRIPE";
+window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
