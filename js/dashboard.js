@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialiser le dashboard
 function initDashboard() {
-    // Gérer les boutons d'action rapide
-    initQuickActions();
+    // Gérer les boutons d'action rapide (avec délai pour s'assurer que servicesData est chargé)
+    setTimeout(initQuickActions, 200);
     
     // Charger l'historique des analyses
     loadAnalysisHistory();
@@ -125,18 +125,135 @@ async function loadUserData() {
     }
 }
 
+
 // Initialiser les actions rapides
 function initQuickActions() {
-    const quickActionBtns = document.querySelectorAll('.quick-action-btn');
+    const quickActionsContainer = document.querySelector('.quick-actions');
     
-    quickActionBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const action = this.getAttribute('onclick').match(/startAnalysis\('([^']+)'\)/)?.[1];
-            if (action) {
-                startAnalysis(action);
-            }
-        });
+    if (!quickActionsContainer) {
+        console.warn('[DASHBOARD] Conteneur .quick-actions non trouvé');
+        return;
+    }
+    
+    // Fonction pour essayer de rendre les actions rapides
+    function tryRenderQuickActions() {
+        // Si servicesData existe (depuis service-modal.js), l'utiliser
+        const services = typeof window.servicesData !== 'undefined' ? window.servicesData : null;
+        
+        if (services) {
+            // Générer les boutons dynamiquement à partir des services
+            renderQuickActions(services);
+            return true;
+        } else {
+            console.warn('[DASHBOARD] servicesData non disponible');
+            return false;
+        }
+    }
+    
+    // Fonction pour essayer de rendre quand tout est prêt
+    function tryRenderWhenReady() {
+        // Vérifier qu'on a à la fois servicesData ET userData
+        if (typeof window.servicesData !== 'undefined' && authService?.userData) {
+            tryRenderQuickActions();
+            return;
+        }
+        
+        console.log('[DASHBOARD] En attente: servicesData ou userData non disponible');
+        
+        // Afficher un message de chargement
+        quickActionsContainer.innerHTML = '<p style="text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
+    }
+    
+    // Fonction pour gérer la disponibilité de servicesData
+    function handleServicesDataReady() {
+        console.log('[DASHBOARD] Événement servicesDataReady reçu');
+        if (authService?.userData) {
+            tryRenderQuickActions();
+        }
+    }
+    
+    // Fonction pour gérer les changements d'état d'authentification
+    function handleAuthStateChanged(event) {
+        console.log('[DASHBOARD] Événement authStateChanged reçu, userData disponible:', !!event.detail.userData);
+        if (event.detail.userData && typeof window.servicesData !== 'undefined') {
+            tryRenderQuickActions();
+        }
+    }
+    
+    // Écouter l'événement servicesDataReady (déclenché par service-modal.js)
+    window.addEventListener('servicesDataReady', handleServicesDataReady);
+    
+    // Écouter l'événement authStateChanged (déclenché par auth.js)
+    window.addEventListener('authStateChanged', handleAuthStateChanged);
+    
+    // Vérifier si servicesData est déjà disponible (au cas où l'événement aurait été manqué)
+    if (typeof window.servicesData !== 'undefined') {
+        console.log('[DASHBOARD] servicesData déjà disponible, vérification de userData');
+        handleServicesDataReady();
+    }
+    
+    // Essayer immédiatement
+    tryRenderWhenReady();
+    
+    // Réessayer toutes les 300ms jusqu'à ce que tout soit prêt
+    const checkReady = setInterval(tryRenderWhenReady, 300);
+    
+    // Timeout après 10 secondes
+    setTimeout(() => {
+        clearInterval(checkReady);
+        console.warn('[DASHBOARD] Impossible de charger les services après 10 secondes');
+        tryRenderWhenReady();
+    }, 10000);
+}
+
+// Générer dynamiquement les boutons d'actions rapides
+function renderQuickActions(services) {
+    const container = document.querySelector('.quick-actions');
+    if (!container) {
+        console.warn('[DASHBOARD] Conteneur .quick-actions non trouvé');
+        return;
+    }
+    
+    // Effacer le contenu existant
+    container.innerHTML = '';
+    
+    // Vérifier qu'on a bien les données utilisateur
+    if (!authService?.userData) {
+        console.warn('[DASHBOARD] authService.userData non disponible, réessayer plus tard');
+        // Afficher un message de chargement
+        container.innerHTML = '<p style="text-align: center; color: #666;">Chargement des services...</p>';
+        return;
+    }
+    
+    const userPlan = authService.userData.plan || 'free';
+    
+    // Liste des services à afficher dans les actions rapides (par ordre de priorité)
+    const quickActionOrder = ['swot', 'porter', 'pestel', 'competitive'];
+    
+    // Créer un bouton pour chaque service prioritaire
+    quickActionOrder.forEach(serviceId => {
+        const service = services[serviceId];
+        if (service) {
+            const btn = document.createElement('button');
+            btn.className = 'quick-action-btn';
+            btn.onclick = () => startAnalysis(serviceId);
+            
+            btn.innerHTML = `
+                <div class="quick-action-icon">
+                    <i class="fas ${service.icon || 'fa-chart-bar'}"></i>
+                </div>
+                <span>${service.name || serviceId}</span>
+                <span class="quick-action-tokens">${service.tokens || '5-10'} tokens</span>
+            `;
+            
+            container.appendChild(btn);
+        }
     });
+    
+    // Si aucun bouton n'a été ajouté, afficher un message
+    if (container.innerHTML === '') {
+        container.innerHTML = '<p style="text-align: center; color: #666;">Aucun service disponible pour votre plan.</p>';
+    }
 }
 
 // Charger l'historique des analyses

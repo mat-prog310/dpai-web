@@ -674,6 +674,17 @@ function setupAuthListener() {
 // Appeler après un court délai pour s'assurer que authService est chargé
 setTimeout(setupAuthListener, 1000);
 
+// Rendre les données des services disponibles globalement
+window.servicesData = servicesData;
+
+// Déclencher un événement pour indiquer que servicesData est prêt
+// Cela permet aux autres modules de savoir quand les services sont disponibles
+if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new CustomEvent('servicesDataReady', {
+        detail: { servicesData: servicesData }
+    }));
+}
+
 // Rendre les fonctions disponibles globalement
 window.showServiceModal = showServiceModal;
 window.closeServiceModal = closeServiceModal;

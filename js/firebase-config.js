@@ -5,14 +5,19 @@ const firebaseConfig = {
   apiKey: "AIzaSyDowkBbuxpYbpkMqdXyrxXGgk7FHxy7m68",
   authDomain: "dpai-8be62.firebaseapp.com",
   projectId: "dpai-8be62",
-  storageBucket: "dpai-8be62.appspot.com",
+  storageBucket: "dpai-8be62.firebasestorage.app",
   messagingSenderId: "829160806332",
   appId: "1:829160806332:web:125fd1c706ca97a0fcbdb9",
   measurementId: "G-R3QVVF35GB"
 };
 
-// Initialisation Firebase (syntaxe compat v10)
-// Firebase devrait déjà être chargé car ce script est après les SDK dans index.html
+// ===========================================================================
+// MODE PRODUCTION STRIPE - Clé publique LIVE
+// ===========================================================================
+// Clé publique LIVE - Pour les paiements réels
+// https://dashboard.stripe.com/apikeys
+// ===========================================================================
+window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
 
 // Vérifier le protocole - Firebase Auth ne fonctionne pas avec file://
 if (window.location.protocol === 'file:') {
@@ -40,17 +45,3 @@ if (typeof firebase !== 'undefined') {
 } else {
   console.error('Firebase SDK non chargé. Vérifiez que les scripts Firebase sont bien chargés AVANT firebase-config.js dans index.html');
 }
-
-// Configuration Stripe
-window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
-
-// Définir les instances globalement (les autres fichiers pourront les utiliser)
-// Utiliser window pour les rendre accessibles partout
-window.firebase = firebase;
-window.firebaseAuth = firebase.auth();
-window.db = firebase.firestore();
-window.firebaseDB = firebase.firestore();
-window.firebaseFunctions = firebase.functions ? firebase.functions() : null;
-
-// Configuration Stripe
-window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";

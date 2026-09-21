@@ -1,76 +1,61 @@
 // =============================================================================
-// STRIPE-SERVICE.JS - Service de paiement Stripe
+// STRIPE-SERVICE.JS - Service de paiement via Payment Links
+// Solution ULTRA-SIMPLE : les URLs sont intégrées directement dans ce fichier
 // =============================================================================
 
 // Références Firebase (exposées par firebase-config.js)
-// db est défini globalement dans firebase-config.js
+// db et authService sont définis globalement dans firebase-config.js
+
+// =============================================================================
+// CONFIGURATION DES PAYMENT LINKS (intégrée directement)
+// MODIFIÉ : Payment Links LIVE - Mode PRODUCTION
+// Créés via: https://dashboard.stripe.com/payment-links
+// =============================================================================
+const PAYMENT_LINKS = {
+  // Packs de tokens
+  discovery_link: "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",
+  boost_link: "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",
+  expert_link: "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",
+  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203",
+  
+  // Abonnements
+  pro_monthly_link: "https://buy.stripe.com/dRm14o2zidgT0Kb1JrcV204",
+  pro_annual_link: "https://buy.stripe.com/28EdRa0ra3Gj64v5ZHcV205",
+  enterprise_monthly_link: "https://buy.stripe.com/00wcN67TC0u778z5ZHcV206",
+  enterprise_annual_link: "https://buy.stripe.com/dRm00k8XG0u7csTbk1cV207"
+};
 
 class StripeService {
   constructor() {
-    this.stripe = null;
-    this.elements = null;
-    this.cardElement = null;
-    this.paymentIntent = null;
-    this.stripeInstance = null; // Instance Stripe pour redirectToCheckout
+    // Utilisation des Payment Links Stripe - fonctionne parfaitement sur mobile
+    console.log('%c💳 [Stripe] Mode PRODUCTION: Utilise des Payment Links LIVE', 'color: #28a745; font-weight: bold;');
+    console.log('%c💳 [Stripe] Paiements réels activés - Cartes de test seront refusées', 'color: #28a745;');
   }
 
-  // Initialisation de Stripe
+  // Initialisation simplifiée
   async init(publishableKey) {
-    if (this.stripe) return;
-    
-    const key = publishableKey || window.stripePublishableKey;
-    if (!key) {
-      console.error('Stripe publishable key non configurée. Ajoutez votre clé dans firebase-config.js');
-      return;
+    // Vérification du mode
+    if (publishableKey && publishableKey.startsWith('pk_test_')) {
+      console.warn('%c⚠️ [Stripe] ATTENTION: Clé TEST détectée! Passez en LIVE pour les paiements réels!', 'color: #dc3545; font-weight: bold;');
+    } else if (publishableKey && publishableKey.startsWith('pk_live_')) {
+      console.log('%c✅ [Stripe] Clé PRODUCTION détectée - Paiements réels activés', 'color: #28a745;');
+    } else {
+      console.warn('%c⚠️ [Stripe] Aucune clé publique Stripe détectée', 'color: #ffc107;');
     }
-    
-    this.stripe = Stripe(key);
-    this.stripeInstance = this.stripe;
-    this.elements = this.stripe.elements();
-    
-    // Créer l'élément de carte
-    const style = {
-      base: {
-        color: '#32325d',
-        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-        fontSmoothing: 'antialiased',
-        fontSize: '16px',
-        '::placeholder': {
-          color: '#aab7c4'
-        }
-      },
-      invalid: {
-        color: '#fa755a',
-        iconColor: '#fa755a'
-      }
-    };
-    
-    this.cardElement = this.elements.create('card', { style: style });
+    return true;
   }
 
-  // Monter l'élément de carte
-  mountCardElement(elementId) {
-    if (this.cardElement) {
-      this.cardElement.mount(`#${elementId}`);
-    }
-  }
-
-  // Démontage
-  unmountCardElement() {
-    if (this.cardElement) {
-      this.cardElement.unmount();
-    }
-  }
-
-  // Paiement pour un pack de tokens
+  // ===========================================================================
+  // ACHAT DE PACKS DE TOKENS (via Payment Link)
+  // ===========================================================================
   async purchaseTokenPack(packId, userId) {
     try {
       const pack = TokenPacks.find(p => p.id === packId);
       if (!pack) {
         throw new Error('Pack de tokens introuvable');
       }
-      
-      // Plan gratuit (0 tokens à acheter)
+
+      // Pack gratuit (0€)
       if (pack.priceEuros === 0) {
         const FieldValue = (window.firebaseDB || firebase.firestore()).FieldValue;
         await db.collection('users').doc(userId).update({
@@ -80,44 +65,46 @@ class StripeService {
         await loadUserTokenData(userId);
         return { success: true, isFree: true };
       }
-      
-      // Redirection vers Stripe Checkout
+
+      // Vérifier que l'utilisateur est connecté
       const user = authService.currentUser;
       if (!user) {
         throw new Error('Utilisateur non connecté');
       }
+
+      // Récupérer l'URL du Payment Link pour ce pack
+      const linkKey = `${packId}_link`;
+      const paymentUrl = PAYMENT_LINKS[linkKey];
       
-      // Utiliser le Price ID stocké dans le pack
-      const priceId = pack.stripePriceId;
-      
-      if (!priceId) {
-        throw new Error(`Price ID non configuré pour le pack ${packId}. Ajoutez stripePriceId dans la configuration du pack.`);
+      if (!paymentUrl) {
+        throw new Error(`Payment Link non trouvé pour le pack ${packId}`);
       }
-      
-      const stripe = this.stripeInstance || Stripe(window.stripePublishableKey);
-      const result = await stripe.redirectToCheckout({
-        lineItems: [{ price: priceId, quantity: 1 }],
-        mode: 'payment',
-        successUrl: `${window.location.origin}/token-shop.html?success=true&packId=${packId}&session_id={CHECKOUT_SESSION_ID}&userId=${userId}`,
-        cancelUrl: `${window.location.origin}/token-shop.html?canceled=true`,
-        customerEmail: user.email,
-        clientReferenceId: `${userId}-${packId}`
+
+      // Stocker l'intention d'achat dans Firestore
+      await db.collection('pending_purchases').doc(user.uid).set({
+        userId: user.uid,
+        packId: packId,
+        tokenAmount: pack.tokenAmount,
+        type: 'token_pack',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'pending'
       });
-      
-      if (result.error) {
-        return { success: false, error: result.error.message };
-      }
+
+      // Rediriger vers le Payment Link Stripe
+      window.location.href = paymentUrl;
       
       return { success: true, redirected: true };
-      
+
     } catch (error) {
       console.error('Erreur achat pack tokens:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Paiement pour un abonnement
-  async purchaseSubscription(planId, userId) {
+  // ===========================================================================
+  // ACHAT D'UN ABONNEMENT (via Payment Link)
+  // ===========================================================================
+  async purchaseSubscription(planId, userId, isAnnual = false) {
     try {
       const planPrices = {
         free: 0,
@@ -129,7 +116,7 @@ class StripeService {
       if (price === undefined) {
         throw new Error('Plan introuvable');
       }
-      
+
       // Plan gratuit
       if (price === 0) {
         await db.collection('users').doc(userId).update({
@@ -140,73 +127,52 @@ class StripeService {
         });
         return { success: true, isFree: true };
       }
-      
-      // Redirection vers Stripe Checkout
+
+      // Vérifier que l'utilisateur est connecté
       const user = authService.currentUser;
       if (!user) {
         throw new Error('Utilisateur non connecté');
       }
-      
-      // Trouver le plan par son ID
+
+      // Trouver le plan
       const plan = SubscriptionPlans.find(p => p.id === planId);
       if (!plan) {
         throw new Error(`Plan ${planId} introuvable.`);
       }
+
+      // Récupérer l'URL du Payment Link
+      const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
+      const paymentUrl = PAYMENT_LINKS[linkKey];
       
-      // Utiliser le Price ID stocké dans le plan
-      const priceId = plan.stripePriceId;
-      
-      if (!priceId) {
-        throw new Error(`Price ID non configuré pour le plan ${planId}. Ajoutez stripePriceId dans la configuration du plan.`);
+      if (!paymentUrl) {
+        throw new Error(`Payment Link non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
       }
-      
-      const stripe = this.stripeInstance || Stripe(window.stripePublishableKey);
-      const result = await stripe.redirectToCheckout({
-        lineItems: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription',
-        successUrl: `${window.location.origin}/pricing.html?success=true&planId=${planId}&session_id={CHECKOUT_SESSION_ID}&userId=${userId}`,
-        cancelUrl: `${window.location.origin}/pricing.html?canceled=true`,
-        customerEmail: user.email,
-        clientReferenceId: `${userId}-${planId}`
+
+      // Stocker l'intention d'abonnement dans Firestore
+      await db.collection('pending_purchases').doc(user.uid).set({
+        userId: user.uid,
+        planId: planId,
+        isAnnual: isAnnual,
+        type: 'subscription',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'pending'
       });
-      
-      if (result.error) {
-        return { success: false, error: result.error.message };
-      }
+
+      // Rediriger vers le Payment Link Stripe
+      window.location.href = paymentUrl;
       
       return { success: true, redirected: true };
-      
+
     } catch (error) {
       console.error('Erreur achat abonnement:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Obtenir le Price ID pour un plan d'abonnement
-  getPriceIdForPlan(planId) {
-    const planPriceIds = {
-      pro: 'VOTRE_PRICE_ID_PRO',
-      enterprise: 'VOTRE_PRICE_ID_ENTERPRISE'
-    };
-    return planPriceIds[planId];
-  }
-
-  // Obtenir le Price ID pour un pack de tokens
-  getPriceIdForPack(packId) {
-    const packPriceIds = {
-      discovery: 'VOTRE_PRICE_ID_DISCOVERY',
-      boost: 'VOTRE_PRICE_ID_BOOST',
-      expert: 'VOTRE_PRICE_ID_EXPERT',
-      unique_report: 'VOTRE_PRICE_ID_UNIQUE_REPORT',
-      // Anciennes clés pour compatibilité
-      pack_100: 'VOTRE_PRICE_ID_PACK_100',
-      pack_500: 'VOTRE_PRICE_ID_PACK_500',
-      pack_1000: 'VOTRE_PRICE_ID_PACK_1000'
-    };
-    return packPriceIds[packId];
-  }
-
-  // Gérer les erreurs de carte
+  // ===========================================================================
+  // FONCTIONS UTILITAIRES (conservées pour compatibilité)
+  // ===========================================================================
+  
   handleCardError(error) {
     const errorElement = document.getElementById('card-errors');
     if (errorElement) {
@@ -214,7 +180,6 @@ class StripeService {
     }
   }
 
-  // Effacer les erreurs
   clearErrors() {
     const errorElement = document.getElementById('card-errors');
     if (errorElement) {
@@ -222,7 +187,6 @@ class StripeService {
     }
   }
 
-  // Récupérer le nom du client
   getCustomerName() {
     const user = authService.currentUser;
     if (user && user.displayName) {

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique des cookies - DPAI</title>
+    <meta name="description" content="Politique des cookies de DPAI. Découvrez quels cookies nous utilisons et comment nous respectons votre vie privée.">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Stripe -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>DPAI</span>
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/#features" class="nav-link">Fonctionnalités</a></li>
+                <li><a href="services.html" class="nav-link">Services</a></li>
+                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
+                <li><a href="/#how-it-works" class="nav-link">Comment ça marche</a></li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Connexion
+                </a>
+                <a href="register.html" class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </a>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="userName">Compte</span>
+                    </button>
+                    <div class="user-dropdown">
+                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
+                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Accueil</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>Politique des cookies</span>
+            </div>
+            <h1>Politique des cookies</h1>
+            <p>Comment DPAI utilise les cookies et technologies similaires pour améliorer votre expérience.</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="legal-content">
+        <div class="container">
+            <div class="legal-section">
+                <h2><i class="fas fa-cookie-bite"></i> Qu'est-ce qu'un cookie ?</h2>
+                <p>Un cookie est un petit fichier texte que les sites web que vous visitez peuvent stocker sur votre ordinateur ou votre appareil mobile. Les cookies sont largement utilisés pour faire fonctionner les sites web de manière efficace, ainsi que pour fournir des informations aux propriétaires des sites.</p>
+                <p>Les cookies que nous utilisons ne contiennent pas d'informations personnellement identifiables. Ils permettent simplement d'améliorer votre expérience d'utilisation de notre plateforme.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-list"></i> Types de cookies que nous utilisons</h2>
+                
+                <h3>1. Cookies nécessaires (Essentiels)</h3>
+                <p>Ces cookies sont strictement nécessaires au bon fonctionnement de notre plateforme. Ils permettent :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> De maintenir votre session active ;</li>
+                    <li><i class="fas fa-check"></i> De se souvenir de vos préférences de connexion ;</li>
+                    <li><i class="fas fa-check"></i> D'assurer la sécurité de votre compte ;</li>
+                    <li><i class="fas fa-check"></i> D'équilibrer la charge sur nos serveurs.</li>
+                </ul>
+                <p><strong>Ces cookies ne peuvent pas être désactivés car ils sont essentiels au fonctionnement de la plateforme.</strong></p>
+
+                <h3>2. Cookies de performance et analytiques</h3>
+                <p>Ces cookies nous aident à comprendre comment vous interagissez avec notre plateforme en collectant et en rapportant des informations de manière anonyme. Ils nous permettent :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> De mesurer le nombre de visiteurs et leur comportement sur la plateforme ;</li>
+                    <li><i class="fas fa-check"></i> D'identifier les pages les plus consultées et les parcours utilisateurs ;</li>
+                    <li><i class="fas fa-check"></i> D'optimiser les performances et l'expérience utilisateur ;</li>
+                    <li><i class="fas fa-check"></i> De détecter et résoudre les problèmes techniques.</li>
+                </ul>
+
+                <h3>3. Cookies fonctionnels</h3>
+                <p>Ces cookies permettent à notre plateforme de se souvenir de vos choix et préférences, offrant ainsi une expérience plus personnalisée. Ils permettent :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> De mémoriser vos préférences linguistiques ;</li>
+                    <li><i class="fas fa-check"></i> De personnaliser l'affichage en fonction de votre appareil ;</li>
+                    <li><i class="fas fa-check"></i> De conserver vos paramètres d'affichage (thème sombre/clair, etc.) ;</li>
+                    <li><i class="fas fa-check"></i> De faciliter la navigation sur la plateforme.</li>
+                </ul>
+
+                <h3>4. Cookies marketing</h3>
+                <p>Avec votre consentement, nous pouvons utiliser des cookies marketing pour :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> Suivre les performances de nos campagnes marketing ;</li>
+                    <li><i class="fas fa-check"></i> Afficher des publicités pertinentes sur d'autres sites que vous visitez ;</li>
+                    <li><i class="fas fa-check"></i> Limiter le nombre de fois où vous voyez une publicité ;</li>
+                    <li><i class="fas fa-check"></i> Mesurer l'efficacité de nos publicités.</li>
+                </ul>
+                <p><strong>Ces cookies ne sont activés que avec votre consentement explicite.</strong></p>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-chart-pie"></i> Durée de vie des cookies</h2>
+                <p>La durée de conservation des cookies varie en fonction de leur finalité :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> <strong>Cookies de session :</strong> Supprimés lorsque vous fermez votre navigateur ;</li>
+                    <li><i class="fas fa-check"></i> <strong>Cookies persistants :</strong> Conservés sur votre appareil pendant une durée déterminée (de quelques jours à plusieurs mois) ;</li>
+                    <li><i class="fas fa-check"></i> <strong>Cookies tiers :</strong> Leur durée dépend des politiques de nos partenaires (Google Analytics, Stripe, etc.).</li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-globe"></i> Cookies tiers</h2>
+                <p>Notre plateforme peut intégrer des services tiers qui utilisent leurs propres cookies. Voici les principaux prestataires :</p>
+                
+                <h3>1. Google Analytics</h3>
+                <p>Nous utilisons Google Analytics pour analyser l'utilisation de notre plateforme. Ces cookies collectent des informations de manière anonyme sur votre comportement de navigation.</p>
+                <p>Pour en savoir plus : <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener noreferrer">Politique des cookies de Google</a></p>
+
+                <h3>2. Firebase (Google)</h3>
+                <p>Firebase est utilisé pour l'authentification, la base de données et l'hébergement. Firebase peut installer des cookies pour le fonctionnement de ces services.</p>
+                <p>Pour en savoir plus : <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité de Firebase</a></p>
+
+                <h3>3. Stripe</h3>
+                <p>Stripe est notre prestataire de paiement sécurisé. Stripe utilise des cookies pour faciliter les transactions et prévenir la fraude.</p>
+                <p>Pour en savoir plus : <a href="https://stripe.com/fr/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité de Stripe</a></p>
+
+                <h3>4. Font Awesome</h3>
+                <p>Nous utilisons Font Awesome pour les icônes de notre plateforme. Font Awesome peut installer des cookies pour le suivi analytique.</p>
+                <p>Pour en savoir plus : <a href="https://fontawesome.com/privacy" target="_blank" rel="noopener noreferrer">Politique de confidentialité de Font Awesome</a></p>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-user-cog"></i> Gestion de vos préférences cookies</h2>
+                <p>Vous pouvez contrôler et gérer vos préférences en matière de cookies de plusieurs manières :</p>
+                
+                <h3>1. Paramètres du navigateur</h3>
+                <p>Tous les navigateurs modernes vous permettent de contrôler les cookies. Vous pouvez :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> Accepter ou refuser tous les cookies ;</li>
+                    <li><i class="fas fa-check"></i> Accepter ou refuser des cookies spécifiques ;</li>
+                    <li><i class="fas fa-check"></i> Supprimer les cookies déjà stockés sur votre appareil ;</li>
+                    <li><i class="fas fa-check"></i> Être notifié lorsque des cookies sont installés.</li>
+                </ul>
+                <p><strong>Attention :</strong> Le blocage des cookies nécessaires peut rendre certaines parties de notre plateforme inutilisables.</p>
+
+                <h3>2. Plateformes de gestion du consentement</h3>
+                <p>Nous respectons les initiatives de l'industrie pour une meilleure gestion du consentement :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> <strong>YourAdChoices (Digital Advertising Alliance) :</strong> <a href="https://youradchoices.com/" target="_blank" rel="noopener noreferrer">youradchoices.com</a></li>
+                    <li><i class="fas fa-check"></i> <strong>Your Online Choices (European Interactive Digital Advertising Alliance) :</strong> <a href="https://www.youronlinechoices.com/" target="_blank" rel="noopener noreferrer">youronlinechoices.com</a></li>
+                </ul>
+
+                <h3>3. Désactivation spécifique</h3>
+                <p>Pour désactiver spécifiquement certains cookies :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> <strong>Google Analytics :</strong> <a href="https://tools.google.com/dlpage/gaoptout/" target="_blank" rel="noopener noreferrer">Module de désactivation Google Analytics</a></li>
+                </ul>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-info-circle"></i> Informations supplémentaires</h2>
+                
+                <h3>1. Modifications de cette politique</h3>
+                <p>Nous pouvons mettre à jour cette Politique des Cookies de temps à autre. Les modifications seront publiées sur cette page avec la date de la dernière mise à jour.</p>
+                <p>Nous vous encourageons à consulter régulièrement cette politique pour rester informé de nos pratiques en matière de cookies.</p>
+
+                <h3>2. Plus d'informations sur les cookies</h3>
+                <p>Pour en savoir plus sur les cookies en général, vous pouvez consulter :</p>
+                <ul class="legal-list">
+                    <li><i class="fas fa-check"></i> <strong>All About Cookies :</strong> <a href="https://www.allaboutcookies.org/" target="_blank" rel="noopener noreferrer">www.allaboutcookies.org</a></li>
+                    <li><i class="fas fa-check"></i> <strong>CNIL (France) :</strong> <a href="https://www.cnil.fr/vos-droits/vos-traces/les-cookies/" target="_blank" rel="noopener noreferrer">Guide des cookies de la CNIL</a></li>
+                </ul>
+
+                <h3>3. Consentement</h3>
+                <p>En continuant à utiliser notre plateforme, vous acceptez notre utilisation des cookies conformément à cette politique. Si vous ne souhaitez pas accepter nos cookies, nous vous invitons à ajuster les paramètres de votre navigateur ou à cesser d'utiliser la plateforme.</p>
+            </div>
+
+            <div class="legal-section">
+                <h2><i class="fas fa-envelope"></i> Contact</h2>
+                <p>Si vous avez des questions concernant cette Politique des Cookies ou notre utilisation des cookies, veuillez nous contacter :</p>
+                <div class="contact-info">
+                    <p><i class="fas fa-building"></i> <strong>Duprey Conseil</strong></p>
+                    <p><i class="fas fa-map-marker-alt"></i> 37 Route de Lyon Illkirch, France</p>
+                    <p><i class="fas fa-envelope"></i> duprey.conseil@gmail.com</p>
+                    <p><i class="fas fa-phone"></i> Tel sur demande uniquement</p>
+                </div>
+                <p><strong>Dernière mise à jour :</strong> Septembre 2026</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>DPAI</span>
+                    </a>
+                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Produit</h4>
+                    <ul>
+                        <li><a href="/#features">Fonctionnalités</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="pricing.html">Tarifs</a></li>
+                        <li><a href="/#how-it-works">Comment ça marche</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Compte</h4>
+                    <ul>
+                        <li><a href="login.html">Connexion</a></li>
+                        <li><a href="register.html">Inscription</a></li>
+                        <li><a href="dashboard.html">Tableau de bord</a></li>
+                        <li><a href="token-shop.html">Acheter des tokens</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Légal</h4>
+                    <ul>
+                        <li><a href="terms.html">Conditions générales</a></li>
+                        <li><a href="privacy.html">Politique de confidentialité</a></li>
+                        <li><a href="cookies.html" class="active">Politique des cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2026 DPAI by Duprey Conseil. Tous droits réservés.</p>
+                <p>Développé avec <i class="fas fa-heart"></i> pour les professionnels de la croissance externe.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top -->
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+    
+    <!-- Configuration Firebase -->
+    <script src="js/firebase-config.js"></script>
+    
+    <!-- Scripts -->
+    <script src="js/tokens.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
