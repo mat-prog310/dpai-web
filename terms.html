@@ -4,15 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conditions générales - DPAI</title>
-    <meta name="description" content="Conditions générales d'utilisation de DPAI. Informations sur les services, les responsabilités et les obligations des utilisateurs.">
-    
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
-    <!-- Stripe -->
-    <script src="https://js.stripe.com/v3/"></script>
+    <meta name="description" content="Conditions générales d'utilisation de DPAI. Services d'analyse stratégique pour les professionnels du M&A et de la croissance externe.">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,212 +63,314 @@
     </nav>
 
     <!-- Page Header -->
-    <section class="page-header">
+    <section class="page-header legal-header">
         <div class="container">
             <div class="breadcrumb">
                 <a href="/">Accueil</a>
                 <i class="fas fa-chevron-right"></i>
                 <span>Conditions générales</span>
             </div>
-            <h1>Conditions générales d'utilisation</h1>
-            <p>Conditions applicables à l'utilisation de la plateforme DPAI et de ses services d'analyse stratégique.</p>
+            <div class="header-content">
+                <div class="header-badge">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Validé par les utilisateurs</span>
+                </div>
+                <h1>Conditions générales d'utilisation</h1>
+                <p class="header-subtitle">Conditions applicables à l'utilisation de la plateforme DPAI et de ses services d'analyse stratégique avancée.</p>
+                <div class="legal-meta">
+                    <span><i class="fas fa-file-contract"></i> Document légal</span>
+                    <span><i class="fas fa-calendar-alt"></i> Mise à jour : Septembre 2026</span>
+                    <span><i class="fas fa-clock"></i> Lecture : ~8 min</span>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Main Content -->
     <main class="legal-content">
         <div class="container">
-            <div class="legal-section">
-                <h2><i class="fas fa-file-contract"></i> Objet</h2>
-                <p>Les présentes Conditions Générales d'Utilisation (ci-après "CGU") régissent l'accès et l'utilisation de la plateforme <strong>DPAI</strong> (ci-après la "Plateforme"), exploitée par <strong>Duprey Conseil</strong>, société immatriculée en France.</p>
-                <p>En accédant à la Plateforme ou en utilisant nos services, vous acceptez d'être lié par ces CGU, y compris toutes les politiques et conditions supplémentaires référencées, y compris notre <a href="privacy.html">Politique de Confidentialité</a> et notre <a href="cookies.html">Politique des Cookies</a>.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-user-check"></i> Acceptation des conditions</h2>
-                <p>En créant un compte ou en utilisant les services de DPAI, vous déclarez :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Avoir lu et compris les présentes CGU ;</li>
-                    <li><i class="fas fa-check"></i> Accepter d'être lié par ces CGU et par toutes les lois et réglementations applicables ;</li>
-                    <li><i class="fas fa-check"></i> Avoir l'autorité nécessaire pour accepter ces CGU au nom de votre entreprise (le cas échéant) ;</li>
-                    <li><i class="fas fa-check"></i> Être un professionnel ou une entreprise utilisateur de services d'analyse stratégique.</li>
-                </ul>
-                <p>Si vous n'acceptez pas ces conditions, vous n'êtes pas autorisé à utiliser la Plateforme.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-user-tie"></i> Éligibilité</h2>
-                <p>Pour utiliser nos services, vous devez :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Avoir au moins 18 ans ;</li>
-                    <li><i class="fas fa-check"></i> Être une personne physique ou morale (entreprise) ;</li>
-                    <li><i class="fas fa-check"></i> Utiliser nos services à des fins professionnelles et non personnelles.</li>
-                </ul>
-                <p>Nous nous réservons le droit de refuser ou de suspendre l'accès à la Plateforme à toute personne qui ne respecterait pas ces critères.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-crown"></i> Description des services</h2>
-                <p>DPAI propose une plateforme SaaS (Software as a Service) offrant des outils d'analyse stratégique avancée pour les professionnels du conseil, de la finance, du M&A et de la croissance externe.</p>
-                
-                <h3>Nos principaux services incluent :</h3>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> <strong>Analyse SWOT :</strong> Identification des Forces, Faiblesses, Opportunités et Menaces pour une entreprise ou un projet ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Analyse Porter 5 Forces :</strong> Évaluation de l'attrait d'un secteur à travers l'analyse des cinq forces concurrentielles ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Analyse PESTEL :</strong> Examen des facteurs macro-environnementaux (Politique, Économique, Socioculturel, Technologique, Écologique, Légal) ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Analyse concurrentielle :</strong> Benchmark et évaluation des concurrents directs et indirects ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Rapports personnalisés :</strong> Génération de rapports détaillés basés sur vos analyses ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Système de tokens :</strong> Modèle de paiement à l'usage pour un accès flexible aux analyses.</li>
-                </ul>
-                
-                <h3>Modèle économique :</h3>
-                <p>DPAI propose deux modèles d'abonnement :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> <strong>Abonnement mensuel/annuel :</strong> Accès illimité à toutes les fonctionnalités avec un nombre de tokens inclus ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Système de tokens :</strong> Achat de crédits (tokens) permettant de réaliser des analyses à la demande.</li>
-                </ul>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-user-edit"></i> Inscription et compte</h2>
-                
-                <h3>1. Création du compte</h3>
-                <p>Pour utiliser nos services, vous devez créer un compte en fournissant :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Une adresse e-mail professionnelle valide ;</li>
-                    <li><i class="fas fa-check"></i> Un mot de passe sécurisé ;</li>
-                    <li><i class="fas fa-check"></i> Des informations sur votre entreprise et votre poste.</li>
-                </ul>
-                <p>Vous vous engagez à fournir des informations exactes, complètes et à jour. Vous êtes responsable de la maintenance de la confidentialité de votre mot de passe et de la sécurité de votre compte.</p>
-
-                <h3>2. Gestion du compte</h3>
-                <p>Vous êtes responsable de toutes les activités qui se produisent sous votre compte. Vous devez :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Notifier immédiatement DPAI de toute utilisation non autorisée de votre compte ;</li>
-                    <li><i class="fas fa-check"></i> Ne pas partager vos identifiants de connexion avec des tiers ;</li>
-                    <li><i class="fas fa-check"></i> Mettre à jour vos informations de compte en cas de changement.</li>
-                </ul>
-
-                <h3>3. Suppression du compte</h3>
-                <p>Vous pouvez demander la suppression de votre compte à tout moment en nous contactant à contact@dpai-strategy.com. La suppression entraînera :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> La désactivation immédiate de l'accès à votre compte ;</li>
-                    <li><i class="fas fa-check"></i> La suppression de vos données personnelles conformément à notre Politique de Confidentialité ;</li>
-                    <li><i class="fas fa-check"></i> La conservation de certaines données pour des raisons légales ou de facturation.</li>
-                </ul>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-money-bill-wave"></i> Tarification et paiement</h2>
-                
-                <h3>1. Tokens</h3>
-                <p>Notre plateforme fonctionne avec un système de tokens. Chaque analyse consomme un certain nombre de tokens en fonction de sa complexité :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Analyse simple (SWOT de base) : 5-15 tokens ;</li>
-                    <li><i class="fas fa-check"></i> Analyse standard (SWOT avancée, PESTEL) : 15-40 tokens ;</li>
-                    <li><i class="fas fa-check"></i> Analyse complexe (Porter 5 Forces, Concurrentielle) : 20-160 tokens ;</li>
-                    <li><i class="fas fa-check"></i> Rapport personnalisé : 50-200 tokens.</li>
-                </ul>
-
-                <h3>2. Abonnements</h3>
-                <p>Nous proposons plusieurs formules d'abonnement avec des crédits de tokens mensuels :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> <strong>Découverte :</strong> Accès limité, idéal pour tester la plateforme ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Professionnel :</strong> Pour une utilisation régulière avec un volume de tokens moyen ;</li>
-                    <li><i class="fas fa-check"></i> <strong>Entreprise :</strong> Pour les cabinets de conseil et les grandes entreprises avec des besoins intensifs.</li>
-                </ul>
-
-                <h3>3. Paiement</h3>
-                <p>Les paiements sont traités de manière sécurisée via notre prestataire <strong>Stripe</strong>. Nous acceptons :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Cartes de crédit et de débit (Visa, Mastercard, American Express) ;</li>
-                    <li><i class="fas fa-check"></i> SEPA Direct Debit (pour les entreprises européennes) ;</li>
-                    <li><i class="fas fa-check"></i> Autres méthodes de paiement proposées par Stripe.</li>
-                </ul>
-                <p>Toutes les transactions sont cryptées et conformes aux normes PCI DSS.</p>
-
-                <h3>4. Facturation</h3>
-                <p>Les factures sont émises électroniquement et envoyées à l'adresse e-mail associée à votre compte. Vous pouvez également accéder à l'historique de vos factures dans votre tableau de bord.</p>
-                <p>Pour les abonnements, le renouvellement est automatique sauf résiliation 24 heures avant la date de renouvellement.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-ban"></i> Restrictions et interdiction</h2>
-                <p>En utilisant notre plateforme, vous vous engagez à <strong>ne pas</strong> :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-times"></i> Utiliser nos services à des fins illégales ou frauduleuses ;</li>
-                    <li><i class="fas fa-times"></i> Violer les droits de propriété intellectuelle de DPAI ou de tiers ;</li>
-                    <li><i class="fas fa-times"></i> Accéder ou tenter d'accéder aux comptes d'autres utilisateurs ;</li>
-                    <li><i class="fas fa-times"></i> Introduire des virus, chevaux de Troie ou autres codes malveillants ;</li>
-                    <li><i class="fas fa-times"></i> Perturber le fonctionnement normal de la plateforme ;</li>
-                    <li><i class="fas fa-times"></i> Collecter ou exploiter les données d'autres utilisateurs sans autorisation ;</li>
-                    <li><i class="fas fa-times"></i> Utiliser des outils automatisés pour extraire des données de notre plateforme.</li>
-                </ul>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-copyright"></i> Propriété intellectuelle</h2>
-                <p>Tous les contenus, fonctionnalités et services disponibles sur la Plateforme DPAI, y compris, mais sans s'y limiter, le texte, les graphismes, les logos, les icônes, les images, les interfaces utilisateur, et le code sont la propriété exclusive de DPAI ou de ses concédants de licence et sont protégés par les lois françaises et internationales sur le droit d'auteur, les marques, les brevets et autres lois sur la propriété intellectuelle.</p>
-                <p>Les présentes CGU ne vous accordent aucun droit sur la propriété intellectuelle de DPAI ou des contenus de tiers sur la Plateforme.</p>
-                <p>Vous conservez tous les droits sur les données et analyses que vous créez via notre plateforme. Cependant, en utilisant nos services, vous nous accordez une licence mondiale, non exclusive, libre de droits, pour héberger, afficher, reproduire et distribuer ces données uniquement dans le cadre de la fourniture des services.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-gavel"></i> Limitation de responsabilité</h2>
-                <p><strong>La plateforme DPAI est fournie "telle quelle" et "selon disponibilité".</strong> Dans la mesure maximale permise par la loi applicable, DPAI :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-exclamation-triangle"></i> NE GARANTIT PAS que les services seront ininterrompus, sécurisés, sans erreur ou sans bug ;</li>
-                    <li><i class="fas fa-exclamation-triangle"></i> NE GARANTIT PAS que les résultats des analyses seront exacts, complets ou utiles ;</li>
-                    <li><i class="fas fa-exclamation-triangle"></i> N'ACCEPTE AUCUNE RESPONSABILITÉ pour les décisions commerciales ou stratégiques prises sur la base de nos analyses ;</li>
-                    <li><i class="fas fa-exclamation-triangle"></i> EXCLUT TOUTE GARANTIE, EXPRESSE OU IMPLICITE, y compris les garanties de QUALITÉ MARCHANDE, D'ADÉQUATION À UN USAGE PARTICULIER et de NON-CONTREFAÇON.</li>
-                </ul>
-                <p>Dans toute la mesure permise par la loi, la responsabilité totale de DPAI envers vous pour tout dommage découlant de ou lié à ces CGU ou à votre utilisation des services, quel qu'en soit le motif, ne dépassera pas le montant total que vous avez payé à DPAI au cours des douze (12) mois précédant l'événement générant la responsabilité.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-shield-alt"></i> Indemnisation</h2>
-                <p>Vous convenez de défendre, indemniser et dégrever DPAI, ses dirigeants, employés, actionnaires et représentants de et contre toute réclamation, responsabilité, dommage, perte ou dette, y compris les frais et honoraires d'avocat raisonnables, résultant de ou liés à :</p>
-                <ul class="legal-list">
-                    <li><i class="fas fa-check"></i> Votre utilisation des services ;</li>
-                    <li><i class="fas fa-check"></i> Votre violation de ces CGU ;</li>
-                    <li><i class="fas fa-check"></i> Votre violation des droits de tiers ;</li>
-                    <li><i class="fas fa-check"></i> Toute autre activité liée à votre compte.</li>
-                </ul>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-pause-circle"></i> Suspension et résiliation</h2>
-                <p>Nous nous réservons le droit de suspendre ou de résilier votre accès aux services à tout moment, avec ou sans préavis, pour toute raison, y compris si nous pensons que vous avez violé ces CGU.</p>
-                <p>En cas de résiliation, vous restez responsable de tous les frais encourus avant la date de résiliation.</p>
-                <p>Vous pouvez résilier votre abonnement à tout moment depuis votre tableau de bord. La résiliation prendra effet à la fin de la période de facturation en cours.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-balance-scale"></i> Loi applicable et résolution des litiges</h2>
-                <p>Les présentes CGU et tout litige découlant de ou lié à celles-ci ou à votre utilisation des services seront régis et interprétés conformément aux lois françaises, sans égard à ses principes de conflit de lois.</p>
-                <p>Tout litige qui ne peut être résolu à l'amiable entre les parties sera soumis à la compétence exclusive des tribunaux de Paris, France.</p>
-                <p>Nonobstant ce qui précède, si vous êtes un consommateur résidant dans l'Union Européenne, la loi de votre pays de résidence pourrait s'appliquer à certaines dispositions des présentes CGU.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-file-alt"></i> Intégralité de l'accord</h2>
-                <p>Les présentes CGU constituent l'intégralité de l'accord entre vous et DPAI concernant l'objet de celles-ci et remplacent tous les accords ou déclarations antérieurs, écrits ou oraux.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-user-plus"></i> Cession</h2>
-                <p>Vous n'êtes pas autorisé à céder ou transférer vos droits ou obligations en vertu de ces CGU sans le consentement écrit préalable de DPAI. Nous pouvons céder ou transférer ces CGU, en tout ou en partie, à toute entité affiliée ou à tout successeur.</p>
-            </div>
-
-            <div class="legal-section">
-                <h2><i class="fas fa-comments"></i> Contact</h2>
-                <p>Pour toute question concernant ces Conditions Générales d'Utilisation, veuillez nous contacter :</p>
-                <div class="contact-info">
-                    <p><i class="fas fa-building"></i> <strong>Duprey Conseil</strong></p>
-                    <p><i class="fas fa-map-marker-alt"></i> 37 Route de Lyon, 67400 Illkirch, France</p>
-                    <p><i class="fas fa-envelope"></i> duprey.conseil@gmail.com</p>
-                    <p><i class="fas fa-phone"></i> Tel sur demande uniquement</p>
+            <!-- Notice -->
+            <div class="legal-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
+                <div class="notice-content">
+                    <strong>Important</strong>
+                    <p>En utilisant notre plateforme, vous acceptez automatiquement ces conditions générales. Veuillez les lire attentivement.</p>
+                </div>
+            </div>
+
+            <!-- Table of Contents -->
+            <div class="legal-toc">
+                <h3><i class="fas fa-list-ul"></i> Sommaire</h3>
+                <ul class="toc-list">
+                    <li><a href="#objet">1. Objet</a></li>
+                    <li><a href="#acceptation">2. Acceptation</a></li>
+                    <li><a href="#eligibilite">3. Éligibilité</a></li>
+                    <li><a href="#services">4. Services</a></li>
+                    <li><a href="#compte">5. Compte</a></li>
+                    <li><a href="#tarification">6. Tarification</a></li>
+                    <li><a href="#restrictions">7. Restrictions</a></li>
+                    <li><a href="#propriete">8. Propriété intellectuelle</a></li>
+                    <li><a href="#responsabilite">9. Responsabilité</a></li>
+                    <li><a href="#indemnisation">10. Indemnisation</a></li>
+                    <li><a href="#suspension">11. Suspension</a></li>
+                    <li><a href="#loi">12. Loi applicable</a></li>
+                    <li><a href="#contact">13. Contact</a></li>
+                </ul>
+            </div>
+
+            <!-- Legal Sections -->
+            <div class="legal-sections">
+                <article class="legal-card" id="objet">
+                    <div class="legal-card-header">
+                        <span class="section-number">1</span>
+                        <h2><i class="fas fa-file-contract"></i> Objet</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Les présentes Conditions Générales d'Utilisation (ci-après "<strong>CGU</strong>") régissent l'accès et l'utilisation de la plateforme <strong>DPAI</strong> (ci-après la "<strong>Plateforme</strong>"), exploitée par <strong>Duprey Conseil</strong>, société immatriculée en France.</p>
+                        <p>En accédant à la Plateforme ou en utilisant nos services, vous acceptez d'être lié par ces CGU, y compris toutes les politiques référencées, y compris notre <a href="privacy.html">Politique de Confidentialité</a> et notre <a href="cookies.html">Politique des Cookies</a>.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="acceptation">
+                    <div class="legal-card-header">
+                        <span class="section-number">2</span>
+                        <h2><i class="fas fa-user-check"></i> Acceptation des conditions</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>En créant un compte ou en utilisant les services de DPAI, vous déclarez :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Avoir lu et compris les présentes CGU ;</li>
+                            <li><i class="fas fa-check"></i> Accepter d'être lié par ces CGU et par toutes les lois applicables ;</li>
+                            <li><i class="fas fa-check"></i> Avoir l'autorité nécessaire pour accepter ces CGU au nom de votre entreprise ;</li>
+                            <li><i class="fas fa-check"></i> Être un professionnel utilisateur de services d'analyse stratégique.</li>
+                        </ul>
+                        <p>Si vous n'acceptez pas ces conditions, vous n'êtes pas autorisé à utiliser la Plateforme.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="eligibilite">
+                    <div class="legal-card-header">
+                        <span class="section-number">3</span>
+                        <h2><i class="fas fa-user-tie"></i> Éligibilité</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Pour utiliser nos services, vous devez :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Avoir au moins 18 ans ;</li>
+                            <li><i class="fas fa-check"></i> Être une personne physique ou morale (entreprise) ;</li>
+                            <li><i class="fas fa-check"></i> Utiliser nos services à des fins professionnelles uniquement.</li>
+                        </ul>
+                        <p>Nous nous réservons le droit de refuser l'accès à la Plateforme à toute personne ne respectant pas ces critères.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="services">
+                    <div class="legal-card-header">
+                        <span class="section-number">4</span>
+                        <h2><i class="fas fa-crown"></i> Description des services</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>DPAI propose une plateforme SaaS offrant des outils d'<strong>analyse stratégique avancée</strong> pour les professionnels du conseil, de la finance, du M&A et de la croissance externe.</p>
+                        
+                        <h3>Nos principaux services incluent :</h3>
+                        <div class="service-grid">
+                            <div class="service-item"><i class="fas fa-swimming-pool"></i> <strong>Analyse SWOT</strong></div>
+                            <div class="service-item"><i class="fas fa-project-diagram"></i> <strong>Porter 5 Forces</strong></div>
+                            <div class="service-item"><i class="fas fa-globe-americas"></i> <strong>Analyse PESTEL</strong></div>
+                            <div class="service-item"><i class="fas fa-users"></i> <strong>Analyse Concurrentielle</strong></div>
+                            <div class="service-item"><i class="fas fa-file-alt"></i> <strong>Rapports Détaillés</strong></div>
+                            <div class="service-item"><i class="fas fa-chart-line"></i> <strong>Tableau de Bord</strong></div>
+                        </div>
+                        
+                        <h3>Modèle économique :</h3>
+                        <p>DPAI propose deux modèles :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> <strong>Abonnement mensuel/annuel :</strong> Accès illimité avec tokens inclus ;</li>
+                            <li><i class="fas fa-check"></i> <strong>Système de tokens :</strong> Achat de crédits pour des analyses à la demande.</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="compte">
+                    <div class="legal-card-header">
+                        <span class="section-number">5</span>
+                        <h2><i class="fas fa-user-edit"></i> Inscription et compte</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <h3>1. Création du compte</h3>
+                        <p>Pour utiliser nos services, vous devez créer un compte en fournissant :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Une adresse e-mail professionnelle valide ;</li>
+                            <li><i class="fas fa-check"></i> Un mot de passe sécurisé ;</li>
+                            <li><i class="fas fa-check"></i> Des informations sur votre entreprise et votre poste.</li>
+                        </ul>
+                        <p>Vous vous engagez à fournir des informations <strong>exactes, complètes et à jour</strong>. Vous êtes responsable de la confidentialité de votre mot de passe et de la sécurité de votre compte.</p>
+
+                        <h3>2. Gestion du compte</h3>
+                        <p>Vous êtes responsable de toutes les activités sous votre compte. Vous devez :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Notifier immédiatement DPAI de toute utilisation non autorisée ;</li>
+                            <li><i class="fas fa-check"></i> Ne pas partager vos identifiants avec des tiers ;</li>
+                            <li><i class="fas fa-check"></i> Mettre à jour vos informations en cas de changement.</li>
+                        </ul>
+
+                        <h3>3. Suppression du compte</h3>
+                        <p>Vous pouvez demander la suppression de votre compte à tout moment en contactant <a href="mailto:duprey.conseil@gmail.com">duprey.conseil@gmail.com</a>. La suppression entraînera :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> La désactivation immédiate de l'accès ;</li>
+                            <li><i class="fas fa-check"></i> La suppression de vos données personnelles conformément à notre Politique de Confidentialité ;</li>
+                            <li><i class="fas fa-check"></i> La conservation de certaines données pour des raisons légales ou de facturation.</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="tarification">
+                    <div class="legal-card-header">
+                        <span class="section-number">6</span>
+                        <h2><i class="fas fa-money-bill-wave"></i> Tarification et paiement</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <h3>1. Tokens</h3>
+                        <p>Notre plateforme fonctionne avec un système de tokens. Chaque analyse consomme des tokens selon sa complexité :</p>
+                        <div class="token-table">
+                            <div class="token-row header">
+                                <span>Type d'analyse</span>
+                                <span>Tokens requis</span>
+                            </div>
+                            <div class="token-row"><span>Analyse simple (SWOT de base)</span><span>5-15 tokens</span></div>
+                            <div class="token-row"><span>Analyse standard (SWOT avancée, PESTEL)</span><span>15-40 tokens</span></div>
+                            <div class="token-row"><span>Analyse complexe (Porter 5 Forces)</span><span>20-160 tokens</span></div>
+                            <div class="token-row"><span>Rapport personnalisé</span><span>50-200 tokens</span></div>
+                        </div>
+
+                        <h3>2. Abonnements</h3>
+                        <p>Nous proposons plusieurs formules :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> <strong>Gratuit :</strong> Accès limité, idéal pour tester ;</li>
+                            <li><i class="fas fa-check"></i> <strong>Pro :</strong> Pour une utilisation régulière ;</li>
+                            <li><i class="fas fa-check"></i> <strong>Entreprise :</strong> Pour les cabinets et grandes entreprises.</li>
+                        </ul>
+
+                        <h3>3. Paiement</h3>
+                        <p>Les paiements sont traités via <strong>Stripe</strong>. Nous acceptons :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Cartes de crédit/débit (Visa, Mastercard, American Express) ;</li>
+                            <li><i class="fas fa-check"></i> SEPA Direct Debit ;</li>
+                            <li><i class="fas fa-check"></i> Autres méthodes proposées par Stripe.</li>
+                        </ul>
+                        <p>Toutes les transactions sont <strong>cryptées</strong> et conformes aux normes PCI DSS.</p>
+
+                        <h3>4. Facturation</h3>
+                        <p>Les factures sont émises électroniquement et envoyées à l'adresse e-mail associée à votre compte. Vous pouvez accéder à l'historique de vos factures dans votre tableau de bord.</p>
+                        <p>Pour les abonnements, le renouvellement est automatique sauf résiliation 24 heures avant la date de renouvellement.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="restrictions">
+                    <div class="legal-card-header">
+                        <span class="section-number">7</span>
+                        <h2><i class="fas fa-ban"></i> Restrictions et interdiction</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>En utilisant notre plateforme, vous vous engagez à <strong>ne pas</strong> :</p>
+                        <ul class="legal-list restrictions">
+                            <li><i class="fas fa-times"></i> Utiliser nos services à des fins illégales ou frauduleuses ;</li>
+                            <li><i class="fas fa-times"></i> Violer les droits de propriété intellectuelle de DPAI ou de tiers ;</li>
+                            <li><i class="fas fa-times"></i> Accéder ou tenter d'accéder aux comptes d'autres utilisateurs ;</li>
+                            <li><i class="fas fa-times"></i> Introduire des virus ou codes malveillants ;</li>
+                            <li><i class="fas fa-times"></i> Perturber le fonctionnement normal de la plateforme ;</li>
+                            <li><i class="fas fa-times"></i> Collecter ou exploiter les données d'autres utilisateurs sans autorisation ;</li>
+                            <li><i class="fas fa-times"></i> Utiliser des outils automatisés pour extraire des données.</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="propriete">
+                    <div class="legal-card-header">
+                        <span class="section-number">8</span>
+                        <h2><i class="fas fa-copyright"></i> Propriété intellectuelle</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Tous les contenus, fonctionnalités et services disponibles sur la Plateforme DPAI sont la propriété exclusive de DPAI ou de ses concédants de licence et sont protégés par les lois françaises et internationales sur la propriété intellectuelle.</p>
+                        <p>Les présentes CGU ne vous accordent aucun droit sur la propriété intellectuelle de DPAI.</p>
+                        <p>Vous conservez tous les droits sur les données et analyses que vous créez via notre plateforme. Cependant, en utilisant nos services, vous nous accordez une licence mondiale, non exclusive, libre de droits, pour héberger, afficher, reproduire et distribuer ces données <strong>uniquement dans le cadre de la fourniture des services</strong>.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="responsabilite">
+                    <div class="legal-card-header">
+                        <span class="section-number">9</span>
+                        <h2><i class="fas fa-gavel"></i> Limitation de responsabilité</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p><strong>La plateforme DPAI est fournie "telle quelle" et "selon disponibilité".</strong> Dans la mesure maximale permise par la loi applicable, DPAI :</p>
+                        <ul class="legal-list warnings">
+                            <li><i class="fas fa-exclamation-triangle"></i> NE GARANTIT PAS que les services seront ininterrompus, sécurisés, sans erreur ou sans bug ;</li>
+                            <li><i class="fas fa-exclamation-triangle"></i> NE GARANTIT PAS que les résultats seront exacts, complets ou utiles ;</li>
+                            <li><i class="fas fa-exclamation-triangle"></i> N'ACCEPTE AUCUNE RESPONSABILITÉ pour les décisions prises sur la base de nos analyses ;</li>
+                            <li><i class="fas fa-exclamation-triangle"></i> EXCLUT TOUTE GARANTIE, EXPRESSE OU IMPLICITE.</li>
+                        </ul>
+                        <p>Dans toute la mesure permise par la loi, la responsabilité totale de DPAI ne dépassera pas le montant total que vous avez payé à DPAI au cours des douze (12) mois précédant l'événement.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="indemnisation">
+                    <div class="legal-card-header">
+                        <span class="section-number">10</span>
+                        <h2><i class="fas fa-shield-alt"></i> Indemnisation</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Vous convenez de défendre, indemniser et dégrever DPAI, ses dirigeants, employés et représentants de et contre toute réclamation, responsabilité, dommage ou dette résultant de :</p>
+                        <ul class="legal-list">
+                            <li><i class="fas fa-check"></i> Votre utilisation des services ;</li>
+                            <li><i class="fas fa-check"></i> Votre violation de ces CGU ;</li>
+                            <li><i class="fas fa-check"></i> Votre violation des droits de tiers ;</li>
+                            <li><i class="fas fa-check"></i> Toute autre activité liée à votre compte.</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="suspension">
+                    <div class="legal-card-header">
+                        <span class="section-number">11</span>
+                        <h2><i class="fas fa-pause-circle"></i> Suspension et résiliation</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Nous nous réservons le droit de suspendre ou de résilier votre accès aux services à tout moment, avec ou sans préavis, pour toute raison, y compris si nous pensons que vous avez violé ces CGU.</p>
+                        <p>En cas de résiliation, vous restez responsable de tous les frais encourus avant la date de résiliation.</p>
+                        <p>Vous pouvez résilier votre abonnement à tout moment depuis votre tableau de bord. La résiliation prendra effet à la fin de la période de facturation en cours.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="loi">
+                    <div class="legal-card-header">
+                        <span class="section-number">12</span>
+                        <h2><i class="fas fa-balance-scale"></i> Loi applicable et résolution des litiges</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Les présentes CGU et tout litige découlant de ou lié à celles-ci seront régis et interprétés conformément aux lois françaises, sans égard à ses principes de conflit de lois.</p>
+                        <p>Tout litige non résolu à l'amiable sera soumis à la compétence exclusive des tribunaux de Paris, France.</p>
+                        <p>Si vous êtes un consommateur résidant dans l'Union Européenne, la loi de votre pays de résidence pourrait s'appliquer à certaines dispositions.</p>
+                    </div>
+                </article>
+
+                <article class="legal-card" id="contact">
+                    <div class="legal-card-header">
+                        <span class="section-number">13</span>
+                        <h2><i class="fas fa-envelope"></i> Contact</h2>
+                    </div>
+                    <div class="legal-card-body">
+                        <p>Pour toute question concernant ces Conditions Générales d'Utilisation :</p>
+                        <div class="contact-info">
+                            <p><i class="fas fa-building"></i> <strong>Duprey Conseil</strong></p>
+                            <p><i class="fas fa-map-marker-alt"></i> 37 Route de Lyon, 67400 Illkirch, France</p>
+                            <p><i class="fas fa-envelope"></i> <a href="mailto:duprey.conseil@gmail.com">duprey.conseil@gmail.com</a></p>
+                            <p><i class="fas fa-phone"></i> Tél. sur demande uniquement</p>
+                        </div>
+                    </div>
+                </article>
             </div>
         </div>
     </main>
@@ -330,7 +424,7 @@
             
             <div class="footer-bottom">
                 <p>&copy; 2026 DPAI by Duprey Conseil. Tous droits réservés.</p>
-                <p>Développé avec <i class="fas fa-heart"></i> pour les professionnels de la croissance externe.</p>
+                <p>Validé par les utilisateurs</p>
             </div>
         </div>
     </footer>
@@ -340,18 +434,7 @@
         <i class="fas fa-arrow-up"></i>
     </a>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
-    
-    <!-- Configuration Firebase -->
-    <script src="js/firebase-config.js"></script>
-    
     <!-- Scripts -->
-    <script src="js/tokens.js"></script>
-    <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
