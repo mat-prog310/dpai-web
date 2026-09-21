@@ -2727,6 +2727,10 @@
     text-decoration: underline;
 }
 
+/* Utility classes for legal pages */
+.mt-2 { margin-top: var(--spacing-md); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+
 /* Legal List */
 .legal-list {
     list-style: none;
