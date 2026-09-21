@@ -135,6 +135,9 @@ function initQuickActions() {
         return;
     }
     
+    // Vérifier si on est en mode démo (file:// protocol) - dans ce cas, garder le HTML statique
+    const isFileProtocol = window.location.protocol === 'file:';
+    
     // Fonction pour essayer de rendre les actions rapides
     function tryRenderQuickActions() {
         // Si servicesData existe (depuis service-modal.js), l'utiliser
@@ -160,7 +163,14 @@ function initQuickActions() {
         
         console.log('[DASHBOARD] En attente: servicesData ou userData non disponible');
         
-        // Afficher un message de chargement
+        // NE PAS écraser le contenu si on est en mode démo (file://) ou si servicesData n'existe pas
+        // Cela permet d'afficher les boutons statiques en mode démo
+        if (isFileProtocol || typeof window.servicesData === 'undefined') {
+            // Garder le contenu statique existant
+            return;
+        }
+        
+        // Afficher un message de chargement seulement si on est en mode production
         quickActionsContainer.innerHTML = '<p style="text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
     }
     
@@ -202,15 +212,26 @@ function initQuickActions() {
     setTimeout(() => {
         clearInterval(checkReady);
         console.warn('[DASHBOARD] Impossible de charger les services après 10 secondes');
-        tryRenderWhenReady();
+        
+        // NE PAS écraser le contenu si on est en mode démo
+        if (!isFileProtocol && typeof window.servicesData !== 'undefined') {
+            tryRenderWhenReady();
+        }
     }, 10000);
 }
 
-// Générer dynamiquement les boutons d'actions rapides
+// Générer dynamiquement les boutons d'actions rapide
 function renderQuickActions(services) {
     const container = document.querySelector('.quick-actions');
     if (!container) {
         console.warn('[DASHBOARD] Conteneur .quick-actions non trouvé');
+        return;
+    }
+    
+    // Vérifier si on est en mode démo - ne pas écraser le contenu statique
+    const isFileProtocol = window.location.protocol === 'file:';
+    if (isFileProtocol) {
+        console.log('[DASHBOARD] Mode démo détecté, conservation du contenu statique');
         return;
     }
     
