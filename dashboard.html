@@ -454,22 +454,31 @@
     <script src="js/main.js"></script>
     <!-- Charger dashboard.js APRES que service-modal.js ait défini window.servicesData -->
     <script>
-        // Attendre que service-modal.js ait chargé les données
-        function loadDashboard() {
-            if (typeof window.servicesData !== 'undefined') {
-                var script = document.createElement('script');
-                script.src = 'js/dashboard.js';
-                document.body.appendChild(script);
-            } else {
-                // Réessayer après un délai
-                setTimeout(loadDashboard, 200);
-            }
+        // Charger dashboard.js une fois que servicesData est disponible
+        function loadDashboardScript() {
+            var script = document.createElement('script');
+            script.src = 'js/dashboard.js';
+            document.body.appendChild(script);
         }
         
-        // Démarrer le chargement du dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboard();
+        // Écouter l'événement servicesDataReady
+        window.addEventListener('servicesDataReady', function() {
+            loadDashboardScript();
         });
+        
+        // Si servicesData est déjà disponible (événement déjà déclenché)
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof window.servicesData !== 'undefined') {
+                loadDashboardScript();
+            }
+        });
+        
+        // Timeout de secours après 3 secondes
+        setTimeout(function() {
+            if (typeof window.servicesData !== 'undefined') {
+                loadDashboardScript();
+            }
+        }, 3000);
     </script>
 </body>
 </html>
