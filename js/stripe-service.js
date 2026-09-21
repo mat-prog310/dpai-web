@@ -119,11 +119,30 @@ class StripeService {
 
       // Plan gratuit
       if (price === 0) {
+        // Créer le tokenState manuellement (sans dépendre de TokenManager qui n'existe pas dans le backend)
+        const tokenLimits = { free: 50, pro: 500, enterprise: 5000 };
+        const tokenBonuses = { free: 0.0, pro: 0.20, enterprise: 0.30 };
+        const baseTokens = tokenLimits[planId] || tokenLimits.free;
+        const bonusTokens = Math.floor(baseTokens * (tokenBonuses[planId] || 0));
+        const welcomeBonus = 10;
+        
         await db.collection('users').doc(userId).update({
           plan: planId,
           subscriptionStartDate: new Date().toISOString(),
           subscriptionEndDate: null,
-          tokenState: TokenManager.createTokenState(userId, planId)
+          tokenState: {
+            userId: userId,
+            plan: planId,
+            baseTokens: baseTokens,
+            bonusTokens: bonusTokens,
+            totalTokens: baseTokens + bonusTokens + welcomeBonus,
+            usedTokens: 0,
+            availableTokens: baseTokens + bonusTokens + welcomeBonus,
+            lastTokenUpdate: new Date().toISOString(),
+            firstAnalysisDone: false,
+            monthlyTokensUsed: 0,
+            lastMonthlyReset: new Date().toISOString()
+          }
         });
         return { success: true, isFree: true };
       }

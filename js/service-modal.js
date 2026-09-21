@@ -182,7 +182,7 @@ const servicesData = {
             'Optimisation de portefeuille d\'activités',
             'Veille stratégique sectorielle'
         ],
-        requiredPlan: 'Pro',
+        requiredPlan: 'pro',
         category: 'Stratégie - Phase 1: Préparation'
     },
     maturity_score: {
@@ -206,7 +206,7 @@ const servicesData = {
             'Benchmark de maturité interne',
             'Identification des axes d\'amélioration'
         ],
-        requiredPlan: 'Pro',
+        requiredPlan: 'pro',
         category: 'Stratégie - Phase 1: Préparation'
     },
     
@@ -232,7 +232,7 @@ const servicesData = {
             'Évaluation de la compatibilité stratégique',
             'Optimisation des processus de fusion'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 2: Recherche & Évaluation'
     },
     valuation_simulator: {
@@ -256,7 +256,7 @@ const servicesData = {
             'Évaluation de cibles potentielles',
             'Benchmark de valorisation'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 2: Recherche & Évaluation'
     },
     due_diligence: {
@@ -280,7 +280,7 @@ const servicesData = {
             'Identification des red flags',
             'Préparation des documents de transaction'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 2: Recherche & Évaluation'
     },
     
@@ -306,7 +306,7 @@ const servicesData = {
             'Préparation des offres d\'achat',
             'Négociation professionnelle'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 3: Négociation & Signature'
     },
     negotiation_simulator: {
@@ -330,7 +330,7 @@ const servicesData = {
             'Test de différentes stratégies',
             'Optimisation des résultats de négociation'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 3: Négociation & Signature'
     },
     
@@ -356,7 +356,7 @@ const servicesData = {
             'Alignement des équipes',
             'Suivi de la progression'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 4: Intégration & Suivi'
     },
     post_acquisition_dashboard: {
@@ -380,7 +380,7 @@ const servicesData = {
             'Rapport aux actionnaires',
             'Optimisation de la valeur créée'
         ],
-        requiredPlan: 'Entreprise',
+        requiredPlan: 'enterprise',
         category: 'Stratégie - Phase 4: Intégration & Suivi'
     }
 };

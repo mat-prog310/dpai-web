@@ -36,7 +36,7 @@ function initTokenShop() {
 
 // Vérifier l'état d'authentification
 function checkAuthStatus(user, userData) {
-    const user = user || authService.currentUser;
+    const currentUser = user || authService.currentUser;
     const userDataFinal = userData || authService.userData;
     
     const tokenBalanceCard = document.getElementById('tokenBalanceCard');
@@ -44,7 +44,7 @@ function checkAuthStatus(user, userData) {
     const tokenPacksSection = document.getElementById('tokenPacksSection');
     const userTokensEl = document.getElementById('userTokens');
     
-    if (user && userDataFinal) {
+    if (currentUser && userDataFinal) {
         // Utilisateur connecté
         if (tokenBalanceCard) tokenBalanceCard.style.display = 'flex';
         if (unauthenticatedView) unauthenticatedView.style.display = 'none';
@@ -437,7 +437,10 @@ async function checkStripePaymentStatus() {
                 
                 // Appeler la fonction pour vérifier le paiement
                 const confirmPayment = functions.httpsCallable('confirmStripePayment');
-                const result = await confirmPayment({ sessionId: sessionId });
+                const result = await confirmPayment({ 
+                  userId: user.uid, 
+                  sessionId: sessionId 
+                });
                 
                 if (result.data.success) {
                     showAlert('success', 'Succès', `Paiement validé ! ${result.data.tokensAdded} tokens ajoutés à votre compte.`);
@@ -447,10 +450,20 @@ async function checkStripePaymentStatus() {
                         await loadUserTokenData(user.uid);
                     }
                     
+                    // Déclencher une mise à jour de l'UI pour que le dashboard se rafraîchisse
+                    if (typeof authService !== 'undefined' && typeof authService.updateUI === 'function') {
+                        authService.updateUI();
+                    }
+                    
                     // Mettre à jour l'UI
                     if (typeof updateTokenDisplay === 'function') {
                         updateTokenDisplay();
                     }
+                    
+                    // Recharger la page pour appliquer les changements
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     showAlert('error', 'Erreur', result.data.error || 'Paiement non validé.');
                 }

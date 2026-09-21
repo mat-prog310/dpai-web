@@ -95,7 +95,7 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
   const uid = context.auth.uid;
 
   // Vérifier que l'utilisateur correspond
-  if (userId !== uid) {
+  if (userId && userId !== uid) {
     throw new functions.https.HttpsError('permission-denied', 'Utilisateur non autorisé');
   }
 
@@ -107,27 +107,40 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
       return { success: false, error: 'Paiement non effectué' };
     }
 
+    // Récupérer les données en attente depuis Firestore si non fournies
+    let finalPendingData = pendingData;
+    if (!finalPendingData) {
+      const pendingDoc = await admin.firestore().collection('pending_purchases').doc(uid).get();
+      if (pendingDoc.exists) {
+        finalPendingData = pendingDoc.data();
+      }
+    }
+
     // Si on a des données en attente (stockées avant la redirection)
-    if (pendingData) {
-      if (pendingData.type === 'token_pack') {
+    if (finalPendingData) {
+      if (finalPendingData.type === 'token_pack') {
         await admin.firestore().collection('users').doc(uid).update({
-          'tokenState.availableTokens': admin.firestore.FieldValue.increment(pendingData.tokenAmount),
-          'tokenState.totalTokens': admin.firestore.FieldValue.increment(pendingData.tokenAmount),
+          'tokenState.availableTokens': admin.firestore.FieldValue.increment(finalPendingData.tokenAmount),
+          'tokenState.totalTokens': admin.firestore.FieldValue.increment(finalPendingData.tokenAmount),
           lastTokenPurchase: admin.firestore.FieldValue.serverTimestamp()
         });
-        console.log(`✅ Tokens crédités: +${pendingData.tokenAmount} pour ${uid} (pack: ${pendingData.packId})`);
+        
+        // Nettoyer les données en attente
+        await admin.firestore().collection('pending_purchases').doc(uid).delete();
+        
+        console.log(`✅ Tokens crédités: +${finalPendingData.tokenAmount} pour ${uid} (pack: ${finalPendingData.packId})`);
         return { success: true, type: 'token_pack' };
       }
       
-      if (pendingData.type === 'subscription') {
-        const plan = PLANS[pendingData.planId];
+      if (finalPendingData.type === 'subscription') {
+        const plan = PLANS[finalPendingData.planId];
         if (!plan) {
           return { success: false, error: 'Plan invalide' };
         }
         
         // Copier toutes les propriétés du plan vers l'utilisateur
         await admin.firestore().collection('users').doc(uid).update({
-          plan: pendingData.planId,
+          plan: finalPendingData.planId,
           isPremium: plan.isPremium,
           features: plan.features,
           allowedAnalyses: plan.allowedAnalyses,
@@ -138,9 +151,9 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
           hasAdvancedAnalyses: plan.hasAdvancedAnalyses,
           canExportPDF: plan.canExportPDF,
           hasAPIAccess: plan.hasAPIAccess || false,
-          subscriptionType: pendingData.isAnnual ? 'annual' : 'monthly',
+          subscriptionType: finalPendingData.isAnnual ? 'annual' : 'monthly',
           subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
-          subscriptionEndDate: pendingData.isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
+          subscriptionEndDate: finalPendingData.isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
           tokenState: {
             availableTokens: plan.tokens,
             totalTokens: plan.tokens,
@@ -149,8 +162,12 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
             lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
           }
         });
-        console.log(`✅ Abonnement activé: ${uid} → Plan ${pendingData.planId}`);
-        return { success: true, type: 'subscription', planId: pendingData.planId };
+        
+        // Nettoyer les données en attente
+        await admin.firestore().collection('pending_purchases').doc(uid).delete();
+        
+        console.log(`✅ Abonnement activé: ${uid} → Plan ${finalPendingData.planId}`);
+        return { success: true, type: 'subscription', planId: finalPendingData.planId };
       }
     }
 
@@ -178,8 +195,8 @@ exports.confirmStripePayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Utilisateur non authentifié');
   }
 
-  const { sessionId } = data;
-  const uid = context.auth.uid;
+  const { sessionId, userId } = data;
+  const uid = userId || context.auth.uid;
 
   try {
     // Récupérer la session Stripe

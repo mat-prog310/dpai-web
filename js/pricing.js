@@ -462,7 +462,11 @@ async function checkStripeSubscriptionStatus() {
                 
                 // Appeler la fonction pour vérifier l'abonnement
                 const confirmSubscription = functions.httpsCallable('confirmStripeSubscription');
-                const result = await confirmSubscription({ sessionId: sessionId, planId: planId });
+                const result = await confirmSubscription({ 
+                  userId: user.uid, 
+                  sessionId: sessionId, 
+                  planId: planId 
+                });
                 
                 if (result.data.success) {
                     showAlert('success', 'Succès', `Abonnement ${planId.toUpperCase()} activé !`);
@@ -471,6 +475,16 @@ async function checkStripeSubscriptionStatus() {
                     if (typeof authService.loadUserData === 'function') {
                         await authService.loadUserData(user.uid);
                     }
+                    
+                    // Déclencher une mise à jour de l'UI pour que le dashboard se rafraîchisse
+                    if (typeof authService.updateUI === 'function') {
+                        authService.updateUI();
+                    }
+                    
+                    // Recharger la page pour appliquer les changements de plan
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     showAlert('error', 'Erreur', result.data.error || 'Abonnement non activé.');
                 }
