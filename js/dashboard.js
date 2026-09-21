@@ -68,10 +68,17 @@ if (typeof window.TokenConfig === 'undefined') {
 }
 
 // Attendre que le DOM soit chargé
-document.addEventListener('DOMContentLoaded', function() {
+// Si le DOM est déjà chargé (script chargé à la fin du body), exécuter immédiatement
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        initDashboard();
+        loadUserData();
+    });
+} else {
+    // DOM déjà chargé, exécuter immédiatement
     initDashboard();
     loadUserData();
-});
+}
 
 // Initialiser le dashboard
 function initDashboard() {
@@ -138,16 +145,32 @@ function initQuickActions() {
     // Fonction pour essayer de rendre les actions rapides
     function tryRenderQuickActions() {
         // Si servicesData existe (depuis service-modal.js), l'utiliser
-        const services = typeof window.servicesData !== 'undefined' ? window.servicesData : null;
+        let services = typeof window.servicesData !== 'undefined' ? window.servicesData : null;
         
-        if (services) {
-            // Générer les boutons dynamiquement à partir des services
-            renderQuickActions(services);
-            return true;
-        } else {
-            console.warn('[DASHBOARD] servicesData non disponible');
-            return false;
+        // Fallback COMPLET : si servicesData n'est pas disponible, créer TOUS les services
+        if (!services) {
+            console.warn('[DASHBOARD] servicesData non disponible, utilisation du fallback COMPLET');
+            services = {
+                swot: { id: 'swot', name: 'Analyse SWOT', icon: 'fa-swimming-pool', tokens: '5-10', requiredPlan: 'free' },
+                porter: { id: 'porter', name: 'Porter 5 Forces', icon: 'fa-project-diagram', tokens: '20-120', requiredPlan: 'free' },
+                pestel: { id: 'pestel', name: 'Analyse PESTEL', icon: 'fa-globe-americas', tokens: '15-75', requiredPlan: 'free' },
+                competitive: { id: 'competitive', name: 'Analyse Concurrentielle', icon: 'fa-users', tokens: '20-160', requiredPlan: 'pro' },
+                reports: { id: 'reports', name: 'Rapports Détaillés', icon: 'fa-file-alt', tokens: '25-250', requiredPlan: null },
+                ideal_sector: { id: 'ideal_sector', name: 'Secteur idéal', icon: 'fa-globe', tokens: '35', requiredPlan: 'pro' },
+                maturity_score: { id: 'maturity_score', name: 'Score de maturité', icon: 'fa-chart-line', tokens: '50', requiredPlan: 'pro' },
+                integration_matrix: { id: 'integration_matrix', name: 'Matrice d\'intégration', icon: 'fa-th', tokens: '180', requiredPlan: 'enterprise' },
+                valuation_simulator: { id: 'valuation_simulator', name: 'Simulateur de valorisation', icon: 'fa-euro-sign', tokens: '200', requiredPlan: 'enterprise' },
+                due_diligence: { id: 'due_diligence', name: 'Checklist Due Diligence', icon: 'fa-check-square', tokens: '100', requiredPlan: 'enterprise' },
+                loi_generator: { id: 'loi_generator', name: 'Générateur de LOI', icon: 'fa-file-contract', tokens: '150', requiredPlan: 'enterprise' },
+                negotiation_simulator: { id: 'negotiation_simulator', name: 'Simulateur de négociation', icon: 'fa-handshake', tokens: '180', requiredPlan: 'enterprise' },
+                action_plan_100_days: { id: 'action_plan_100_days', name: 'Plan 100 jours', icon: 'fa-route', tokens: '250', requiredPlan: 'enterprise' },
+                post_acquisition_dashboard: { id: 'post_acquisition_dashboard', name: 'Dashboard Post-Acquisition', icon: 'fa-chart-area', tokens: '80/mois', requiredPlan: 'enterprise' }
+            };
         }
+        
+        // Générer les boutons
+        renderQuickActions(services);
+        return true;
     }
     
     // Fonction pour essayer de rendre quand tout est prêt

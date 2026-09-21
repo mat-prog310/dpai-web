@@ -167,28 +167,48 @@ class ReferralSystem {
 class TokenManager {
   static init(userData) {
     this.userData = userData;
-    this.tokenState = userData.tokenState || this.createTokenState(userData.id, userData.plan);
+    
+    // Vérifier si le tokenState existe et correspond au plan actuel
+    // Si le plan a changé ou si tokenState est invalide, le recréer
+    const expectedBaseTokens = TokenConfig.baseTokenLimits[userData.plan] || TokenConfig.baseTokenLimits.free;
+    const hasValidTokenState = userData.tokenState && 
+                                userData.tokenState.plan === userData.plan &&
+                                userData.tokenState.baseTokens === expectedBaseTokens;
+    
+    if (hasValidTokenState) {
+      this.tokenState = userData.tokenState;
+    } else {
+      // Re créer le tokenState avec le bon plan, en conservant l'historique d'utilisation
+      console.log('[TokenManager] Recalcul du tokenState pour le plan:', userData.plan);
+      this.tokenState = this.createTokenState(userData.id, userData.plan, userData.tokenState);
+    }
+    
     this.loyaltyInfo = userData.loyaltyInfo || LoyaltySystem.create(userData.id);
     this.referralInfo = userData.referralInfo;
     this.hasCompanyDiscount = userData.hasCompanyDiscount || false;
   }
 
-  static createTokenState(userId, plan) {
+  static createTokenState(userId, plan, existingTokenState = null) {
     const baseTokens = TokenConfig.baseTokenLimits[plan] || TokenConfig.baseTokenLimits.free;
     const bonusTokens = Math.floor(baseTokens * (TokenConfig.tokenBonuses[plan] || 0));
+    
+    const totalTokens = baseTokens + bonusTokens + TokenConfig.welcomeBonus;
+    const usedTokens = existingTokenState?.usedTokens || 0;
+    const monthlyTokensUsed = existingTokenState?.monthlyTokensUsed || 0;
+    const firstAnalysisDone = existingTokenState?.firstAnalysisDone || false;
     
     return {
       userId: userId,
       plan: plan,
       baseTokens: baseTokens,
       bonusTokens: bonusTokens,
-      totalTokens: baseTokens + bonusTokens + TokenConfig.welcomeBonus,
-      usedTokens: 0,
-      availableTokens: baseTokens + bonusTokens + TokenConfig.welcomeBonus,
+      totalTokens: totalTokens,
+      usedTokens: Math.min(usedTokens, totalTokens), // Ne pas dépasser le total
+      availableTokens: totalTokens - usedTokens,
       lastTokenUpdate: new Date().toISOString(),
-      firstAnalysisDone: false,
-      monthlyTokensUsed: 0,
-      lastMonthlyReset: new Date().toISOString()
+      firstAnalysisDone: firstAnalysisDone,
+      monthlyTokensUsed: monthlyTokensUsed,
+      lastMonthlyReset: existingTokenState?.lastMonthlyReset || new Date().toISOString()
     };
   }
 

@@ -132,7 +132,7 @@ const servicesData = {
             'Export en PDF et Excel',
             'Présentation prête à l\'emploi'
         ],
-        requiredPlan: 'pro'
+        requiredPlan: null
     },
     dashboard: {
         id: 'dashboard',
