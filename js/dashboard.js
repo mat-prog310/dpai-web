@@ -227,16 +227,37 @@ function renderQuickActions(services) {
     
     const userPlan = authService.userData.plan || 'free';
     
-    // Liste des services à afficher dans les actions rapides (par ordre de priorité)
-    const quickActionOrder = ['swot', 'porter', 'pestel', 'competitive'];
+    // Liste de TOUS les services à afficher (par ordre de priorité)
+    // Tous les services seront visibles, mais certains seront verrouillés selon le plan
+    const allServicesOrder = ['swot', 'porter', 'pestel', 'competitive', 'reports', 'ideal_sector', 'maturity_score', 'integration_matrix', 'valuation_simulator', 'due_diligence', 'loi_generator', 'negotiation_simulator', 'action_plan_100_days', 'post_acquisition_dashboard'];
     
-    // Créer un bouton pour chaque service prioritaire
-    quickActionOrder.forEach(serviceId => {
+    // Créer un bouton pour chaque service
+    allServicesOrder.forEach(serviceId => {
         const service = services[serviceId];
         if (service) {
             const btn = document.createElement('button');
-            btn.className = 'quick-action-btn';
-            btn.onclick = () => startAnalysis(serviceId);
+            
+            // Vérifier si le service est accessible avec le plan actuel
+            const isAccessible = typeof isServiceAccessible !== 'undefined' 
+                ? isServiceAccessible(service, userPlan) 
+                : true; // Par défaut accessible si la fonction n'existe pas
+            
+            btn.className = 'quick-action-btn' + (isAccessible ? '' : ' locked');
+            
+            if (!isAccessible) {
+                // Ajouter un cadenas et désactiver le clic
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showPlanUpgradeMessage(service);
+                };
+                btn.setAttribute('title', `Ce service nécessite le plan ${service.requiredPlan ? service.requiredPlan.charAt(0).toUpperCase() + service.requiredPlan.slice(1) : 'Pro'}`);
+            } else {
+                btn.onclick = () => startAnalysis(serviceId);
+            }
+            
+            // Ajouter l'icône de cadenas si verrouillé
+            const lockIcon = isAccessible ? '' : '<div class="quick-action-lock"><i class="fas fa-lock"></i></div>';
             
             btn.innerHTML = `
                 <div class="quick-action-icon">
@@ -244,6 +265,7 @@ function renderQuickActions(services) {
                 </div>
                 <span>${service.name || serviceId}</span>
                 <span class="quick-action-tokens">${service.tokens || '5-10'} tokens</span>
+                ${lockIcon}
             `;
             
             container.appendChild(btn);
@@ -252,8 +274,72 @@ function renderQuickActions(services) {
     
     // Si aucun bouton n'a été ajouté, afficher un message
     if (container.innerHTML === '') {
-        container.innerHTML = '<p style="text-align: center; color: #666;">Aucun service disponible pour votre plan.</p>';
+        container.innerHTML = '<p style="text-align: center; color: #666;">Aucun service disponible.</p>';
     }
+}
+
+// Afficher un message pour inviter à passer à un plan supérieur
+function showPlanUpgradeMessage(service) {
+    const requiredPlan = service.requiredPlan ? service.requiredPlan.charAt(0).toUpperCase() + service.requiredPlan.slice(1) : 'Pro';
+    const message = `Ce service est réservé aux utilisateurs du plan ${requiredPlan} et supérieurs. Passez au plan ${requiredPlan} pour y accéder.`;
+    
+    // Afficher une notification
+    showNotification(message, 'warning');
+}
+
+// Fonction pour afficher une notification (si elle n'existe pas déjà)
+function showNotification(message, type = 'info') {
+    // Vérifier si une fonction de notification existe déjà
+    if (typeof window.showToast !== 'undefined') {
+        window.showToast(message, type);
+        return;
+    }
+    
+    // Créer une notification simple
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    // Ajouter des styles de base
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: ${type === 'warning' ? '#fef3c7' : '#d1fae5'};
+        border: 1px solid ${type === 'warning' ? '#f59e0b' : '#10b981'};
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 400px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: ${type === 'warning' ? '#92400e' : '#065f46'};
+    `;
+    
+    notification.querySelector('.notification-close').style.cssText = `
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.7;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Retirer après 5 secondes
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 // Charger l'historique des analyses

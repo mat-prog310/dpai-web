@@ -2702,3 +2702,116 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spaci
+
+/* =============================================================================
+   QUICK ACTION BUTTONS - LOCKED STATE
+   ============================================================================= */
+
+/* Quick action buttons - locked state */
+.quick-action-btn.locked {
+    position: relative;
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--gray-100) !important;
+    border-color: var(--gray-200) !important;
+    color: var(--gray-500) !important;
+}
+
+.quick-action-btn.locked:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: var(--gray-100) !important;
+}
+
+.quick-action-btn.locked .quick-action-icon {
+    color: var(--gray-400) !important;
+}
+
+.quick-action-btn.locked .quick-action-tokens {
+    color: var(--gray-400) !important;
+}
+
+.quick-action-lock {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-md);
+    color: var(--white);
+    font-size: var(--font-size-2xl);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.quick-action-btn.locked:hover .quick-action-lock {
+    opacity: 1;
+}
+
+.quick-action-btn .quick-action-lock i {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Service cards locked state (for services.html) */
+.service-detail.locked {
+    position: relative;
+    opacity: 0.7;
+}
+
+.service-detail.locked .service-detail-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+}
+
+.service-detail.locked .service-detail-actions {
+    display: none !important;
+}
+
+.service-lock-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-200);
+    border-radius: var(--border-radius-full);
+    color: var(--gray-600);
+    font-size: var(--font-size-lg);
+}
+
+.service-lock-icon i {
+    color: var(--gray-600);
+}
+
+.service-requires-plan {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--primary-bg);
+    color: var(--primary);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    border-radius: var(--border-radius-full);
+    margin-left: auto;
+}
+
+.service-requires-plan i {
+    font-size: var(--font-size-sm);
+}

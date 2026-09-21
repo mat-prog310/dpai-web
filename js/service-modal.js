@@ -38,7 +38,8 @@ const servicesData = {
             'Analyse de la position concurrentielle de votre entreprise',
             'Préparation à une levée de fonds',
             'Planification stratégique annuelle'
-        ]
+        ],
+        requiredPlan: 'free'
     },
     porter: {
         id: 'porter',
@@ -59,7 +60,8 @@ const servicesData = {
             'Évaluation de la compétitivité d\'un secteur',
             'Décision d\'entrée ou de sortie d\'un marché',
             'Identification des barrières à l\'entrée'
-        ]
+        ],
+        requiredPlan: 'free'
     },
     pestel: {
         id: 'pestel',
@@ -81,7 +83,8 @@ const servicesData = {
             'Évaluation des risques externes pour un projet',
             'Planification stratégique long terme',
             'Identification des opportunités émergentes'
-        ]
+        ],
+        requiredPlan: 'free'
     },
     competitive: {
         id: 'competitive',
@@ -103,7 +106,8 @@ const servicesData = {
             'Préparation à une guerre des prix',
             'Identification des concurrents directs et indirects',
             'Évaluation des barrières à l\'entrée'
-        ]
+        ],
+        requiredPlan: 'pro'
     },
     reports: {
         id: 'reports',
@@ -127,7 +131,8 @@ const servicesData = {
             'Plan d\'action détaillé avec échéancier',
             'Export en PDF et Excel',
             'Présentation prête à l\'emploi'
-        ]
+        ],
+        requiredPlan: 'pro'
     },
     dashboard: {
         id: 'dashboard',
