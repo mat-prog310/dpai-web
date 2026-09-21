@@ -694,3 +694,4 @@ if (typeof window !== 'undefined' && window.dispatchEvent) {
 window.showServiceModal = showServiceModal;
 window.closeServiceModal = closeServiceModal;
 window.updateServicesByPlan = updateServicesByPlan;
+window.isServiceAccessible = isServiceAccessible;

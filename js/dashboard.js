@@ -135,9 +135,6 @@ function initQuickActions() {
         return;
     }
     
-    // Vérifier si on est en mode démo (file:// protocol) - dans ce cas, garder le HTML statique
-    const isFileProtocol = window.location.protocol === 'file:';
-    
     // Fonction pour essayer de rendre les actions rapides
     function tryRenderQuickActions() {
         // Si servicesData existe (depuis service-modal.js), l'utiliser
@@ -163,14 +160,7 @@ function initQuickActions() {
         
         console.log('[DASHBOARD] En attente: servicesData ou userData non disponible');
         
-        // NE PAS écraser le contenu si on est en mode démo (file://) ou si servicesData n'existe pas
-        // Cela permet d'afficher les boutons statiques en mode démo
-        if (isFileProtocol || typeof window.servicesData === 'undefined') {
-            // Garder le contenu statique existant
-            return;
-        }
-        
-        // Afficher un message de chargement seulement si on est en mode production
+        // Afficher un message de chargement
         quickActionsContainer.innerHTML = '<p style="text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
     }
     
@@ -212,11 +202,7 @@ function initQuickActions() {
     setTimeout(() => {
         clearInterval(checkReady);
         console.warn('[DASHBOARD] Impossible de charger les services après 10 secondes');
-        
-        // NE PAS écraser le contenu si on est en mode démo
-        if (!isFileProtocol && typeof window.servicesData !== 'undefined') {
-            tryRenderWhenReady();
-        }
+        tryRenderWhenReady();
     }, 10000);
 }
 
@@ -228,25 +214,14 @@ function renderQuickActions(services) {
         return;
     }
     
-    // Vérifier si on est en mode démo - ne pas écraser le contenu statique
-    const isFileProtocol = window.location.protocol === 'file:';
-    if (isFileProtocol) {
-        console.log('[DASHBOARD] Mode démo détecté, conservation du contenu statique');
-        return;
-    }
-    
     // Effacer le contenu existant
     container.innerHTML = '';
     
     // Vérifier qu'on a bien les données utilisateur
-    if (!authService?.userData) {
-        console.warn('[DASHBOARD] authService.userData non disponible, réessayer plus tard');
-        // Afficher un message de chargement
-        container.innerHTML = '<p style="text-align: center; color: #666;">Chargement des services...</p>';
-        return;
-    }
+    const userPlan = authService?.userData?.plan || 'free';
     
-    const userPlan = authService.userData.plan || 'free';
+    // Si on n'a pas userData, afficher tous les services comme accessibles (mode démo)
+    const hasUserData = !!authService?.userData;
     
     // Liste de TOUS les services à afficher (par ordre de priorité)
     // Tous les services seront visibles, mais certains seront verrouillés selon le plan
@@ -259,9 +234,10 @@ function renderQuickActions(services) {
             const btn = document.createElement('button');
             
             // Vérifier si le service est accessible avec le plan actuel
-            const isAccessible = typeof isServiceAccessible !== 'undefined' 
+            // En mode démo (sans userData), tout est accessible
+            const isAccessible = hasUserData && typeof isServiceAccessible !== 'undefined' 
                 ? isServiceAccessible(service, userPlan) 
-                : true; // Par défaut accessible si la fonction n'existe pas
+                : true; // Par défaut accessible si pas de userData ou pas de fonction
             
             btn.className = 'quick-action-btn' + (isAccessible ? '' : ' locked');
             
