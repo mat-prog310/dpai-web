@@ -452,6 +452,24 @@
     <script src="js/analyses.js"></script>
     <script src="js/service-modal.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/dashboard.js"></script>
+    <!-- Charger dashboard.js APRES que service-modal.js ait défini window.servicesData -->
+    <script>
+        // Attendre que service-modal.js ait chargé les données
+        function loadDashboard() {
+            if (typeof window.servicesData !== 'undefined') {
+                var script = document.createElement('script');
+                script.src = 'js/dashboard.js';
+                document.body.appendChild(script);
+            } else {
+                // Réessayer après un délai
+                setTimeout(loadDashboard, 200);
+            }
+        }
+        
+        // Démarrer le chargement du dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+        });
+    </script>
 </body>
 </html>

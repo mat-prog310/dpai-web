@@ -152,13 +152,14 @@ function initQuickActions() {
     
     // Fonction pour essayer de rendre quand tout est prêt
     function tryRenderWhenReady() {
-        // Vérifier qu'on a à la fois servicesData ET userData
-        if (typeof window.servicesData !== 'undefined' && authService?.userData) {
+        // Si servicesData est disponible, on peut afficher les services
+        // (même sans userData, on affichera tout comme accessible en mode démo)
+        if (typeof window.servicesData !== 'undefined') {
             tryRenderQuickActions();
             return;
         }
         
-        console.log('[DASHBOARD] En attente: servicesData ou userData non disponible');
+        console.log('[DASHBOARD] En attente: servicesData non disponible');
         
         // Afficher un message de chargement
         quickActionsContainer.innerHTML = '<p style="text-align: center; color: #666;"><i class="fas fa-spinner fa-spin"></i> Chargement...</p>';
@@ -167,15 +168,13 @@ function initQuickActions() {
     // Fonction pour gérer la disponibilité de servicesData
     function handleServicesDataReady() {
         console.log('[DASHBOARD] Événement servicesDataReady reçu');
-        if (authService?.userData) {
-            tryRenderQuickActions();
-        }
+        tryRenderQuickActions();
     }
     
     // Fonction pour gérer les changements d'état d'authentification
     function handleAuthStateChanged(event) {
         console.log('[DASHBOARD] Événement authStateChanged reçu, userData disponible:', !!event.detail.userData);
-        if (event.detail.userData && typeof window.servicesData !== 'undefined') {
+        if (typeof window.servicesData !== 'undefined') {
             tryRenderQuickActions();
         }
     }
