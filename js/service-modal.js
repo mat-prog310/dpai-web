@@ -2,17 +2,13 @@
 // SERVICE-MODAL.JS - Gestion des modales de détails des services
 // =============================================================================
 
-// Utiliser la constante SubscriptionPlans définie dans stripe-service.js
-// Si elle n'existe pas encore, la définir globalement ici pour éviter les erreurs
-if (typeof window.SubscriptionPlans === 'undefined') {
-    var SubscriptionPlans = window.SubscriptionPlans = {
-        FREE: 'free',
-        PRO: 'pro',
-        ENTERPRISE: 'enterprise'
-    };
-} else {
-    var SubscriptionPlans = window.SubscriptionPlans;
-}
+// Définir SubscriptionPlans IMMÉDIATEMENT pour éviter toute erreur de référence
+// (même si ce fichier est chargé avant stripe-service.js)
+var SubscriptionPlans = window.SubscriptionPlans = window.SubscriptionPlans || {
+    FREE: 'free',
+    PRO: 'pro',
+    ENTERPRISE: 'enterprise'
+};
 
 // Hiérarchie des plans (index plus élevé = meilleur plan)
 const PlanHierarchy = {
