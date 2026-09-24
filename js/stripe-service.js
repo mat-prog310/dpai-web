@@ -26,15 +26,233 @@ var TokenPacks = window.TokenPacks = window.TokenPacks || [
 ];
 
 // =============================================================================
-// CONFIGURATION DES PAYMENT LINKS STRIPE
+// HELPER : Récupère FieldValue de manière robuste
 // =============================================================================
-// 1. Va sur https://dashboard.stripe.com/test/payment-links (TEST)
-//    ou https://dashboard.stripe.com/payment-links (PRODUCTION)
-// 2. Crée un Payment Link pour chaque produit
-// 3. Copie les URLs ici
+function getFieldValue() {
+  if (window.firebaseDB && window.firebaseDB.FieldValue) return window.firebaseDB.FieldValue;
+  if (window.firebase && firebase.firestore) return firebase.firestore.FieldValue;
+  throw new Error('Firebase FieldValue introuvable');
+}
+
 // =============================================================================
-const PAYMENT_LINKS = {
-  // Packs de tokens
+// HELPER : Récupère l'URL de paiement (compatible avec ou sans suffixe _link)
+// =============================================================================
+function getPaymentLink(key) {
+  const links = window.PAYMENT_LINKS || {};
+  return links[key + '_link'] || links[key] || null;
+}
+
+// =============================================================================
+// HELPER : Ajoute client_reference_id à l'URL (pour le webhook)
+// =============================================================================
+function buildPaymentUrl(baseUrl, data) {
+  const ref = encodeURIComponent(JSON.stringify(data));
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}client_reference_id=${ref}`;
+}
+
+// =============================================================================
+// CLASSE STRIPE SERVICE
+// =============================================================================
+class StripeService {
+  constructor() {
+    console.log('%c💳 [Stripe] Utilise Payment Links - Pas besoin de backend', 'color: #6772e5; font-weight: bold;');
+  }
+
+  // Initialisation
+  async init(publishableKey) {
+    if (!publishableKey) {
+      console.warn('%c⚠️ [Stripe] Aucune clé publique Stripe détectée', 'color: #ffc107;');
+      return false;
+    }
+
+    if (publishableKey.startsWith('pk_test_')) {
+      console.log('%c🧪 [Stripe] Mode TEST - Cartes de test autorisées', 'color: #28a745; font-weight: bold;');
+    } else if (publishableKey.startsWith('pk_live_')) {
+      console.log('%c✅ [Stripe] Mode PRODUCTION - Paiements réels', 'color: #28a745;');
+    }
+
+    return true;
+  }
+
+  // ===========================================================================
+  // ACHAT DE PACKS DE TOKENS (via Payment Link)
+  // ===========================================================================
+  async purchaseTokenPack(packId, userId) {
+    try {
+      const pack = TokenPacks.find(p => p.id === packId);
+      if (!pack) {
+        throw new Error('Pack de tokens introuvable');
+      }
+
+      // Pack gratuit (0€)
+      if (pack.priceEuros === 0) {
+        const FieldValue = getFieldValue();
+        await db.collection('users').doc(userId).update({
+          'tokenState.availableTokens': FieldValue.increment(pack.tokenAmount),
+          'tokenState.totalTokens': FieldValue.increment(pack.tokenAmount)
+        });
+        if (typeof loadUserTokenData === 'function') {
+          await loadUserTokenData(userId);
+        }
+        return { success: true, isFree: true };
+      }
+
+      // Vérifier que l'utilisateur est connecté
+      const user = authService.currentUser;
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // ✅ Récupérer l'URL (avec ou sans _link)
+      const paymentUrl = getPaymentLink(packId);
+
+      if (!paymentUrl) {
+        throw new Error(`Payment Link non configuré pour ${packId}. Configure PAYMENT_LINKS dans payment-links-config.js`);
+      }
+
+      // Stocker l'intention d'achat dans Firestore
+      const FieldValue = getFieldValue();
+      await db.collection('pending_purchases').doc(user.uid).set({
+        userId: user.uid,
+        packId: packId,
+        tokenAmount: pack.tokenAmount,
+        type: 'token_pack',
+        createdAt: FieldValue.serverTimestamp(),
+        status: 'pending'
+      });
+
+      // ✅ Redirection avec client_reference_id
+      const finalUrl = buildPaymentUrl(paymentUrl, {
+        userId: user.uid,
+        planId: packId,
+        type: 'token_pack'
+      });
+      window.location.href = finalUrl;
+      return { success: true, redirected: true };
+
+    } catch (error) {
+      console.error('Erreur achat pack tokens:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ===========================================================================
+  // ACHAT D'UN ABONNEMENT (via Payment Link)
+  // ===========================================================================
+  async purchaseSubscription(planId, userId, isAnnual = false) {
+    try {
+      const plan = SubscriptionPlansData.find(p => p.id === planId);
+      if (!plan) {
+        throw new Error('Plan introuvable');
+      }
+
+      // Plan gratuit (0€) : activation directe
+      if (plan.priceEuros === 0) {
+        const baseTokens = plan.tokenLimit;
+        const bonusTokens = Math.floor(baseTokens * plan.bonusRate);
+        const welcomeBonus = 10;
+
+        await db.collection('users').doc(userId).update({
+          plan: planId,
+          subscriptionStartDate: new Date().toISOString(),
+          subscriptionEndDate: null,
+          tokenState: {
+            userId: userId,
+            plan: planId,
+            baseTokens: baseTokens,
+            bonusTokens: bonusTokens,
+            totalTokens: baseTokens + bonusTokens + welcomeBonus,
+            usedTokens: 0,
+            availableTokens: baseTokens + bonusTokens + welcomeBonus,
+            lastTokenUpdate: new Date().toISOString(),
+            firstAnalysisDone: false,
+            monthlyTokensUsed: 0,
+            lastMonthlyReset: new Date().toISOString()
+          }
+        });
+
+        if (typeof loadUserTokenData === 'function') {
+          await loadUserTokenData(userId);
+        }
+
+        return { success: true, isFree: true };
+      }
+
+      // Vérifier que l'utilisateur est connecté
+      const user = authService.currentUser;
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // ✅ Récupérer l'URL (avec suffixe _link)
+      const linkKey = isAnnual ? `${planId}_annual` : `${planId}_monthly`;
+      const paymentUrl = getPaymentLink(linkKey);
+
+      if (!paymentUrl) {
+        throw new Error(`Payment Link non configuré pour ${linkKey}. Configure PAYMENT_LINKS dans payment-links-config.js`);
+      }
+
+      // Stocker l'intention d'abonnement dans Firestore
+      const FieldValue = getFieldValue();
+      await db.collection('pending_purchases').doc(user.uid).set({
+        userId: user.uid,
+        planId: planId,
+        isAnnual: isAnnual,
+        type: 'subscription',
+        createdAt: FieldValue.serverTimestamp(),
+        status: 'pending'
+      });
+
+      // ✅ Redirection avec client_reference_id
+      const finalUrl = buildPaymentUrl(paymentUrl, {
+        userId: user.uid,
+        planId: planId,
+        isAnnual: isAnnual,
+        type: 'subscription'
+      });
+      window.location.href = finalUrl;
+      return { success: true, redirected: true };
+
+    } catch (error) {
+      console.error('Erreur achat abonnement:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // ===========================================================================
+  // FONCTIONS UTILITAIRES
+  // ===========================================================================
+
+  handleCardError(error) {
+    const errorElement = document.getElementById('card-errors');
+    if (errorElement) {
+      errorElement.textContent = error.message;
+    }
+  }
+
+  clearErrors() {
+    const errorElement = document.getElementById('card-errors');
+    if (errorElement) {
+      errorElement.textContent = '';
+    }
+  }
+
+  getCustomerName() {
+    const user = authService.currentUser;
+    if (user && user.displayName) {
+      return user.displayName;
+    }
+    return 'Client DPAI';
+  }
+}
+
+// =============================================================================
+// EXPOSITION GLOBALE (obligatoire pour pricing.js / token-shop.js)
+// =============================================================================
+window.stripeService = new StripeService();
+var stripeService = window.stripeService;
+console.log('%c💳 [stripe-service.js] stripeService exposé en global', 'color: #6772e5; font-weight: bold;');  // Packs de tokens
   discovery:     "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",
   boost:         "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",
   expert:        "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",
