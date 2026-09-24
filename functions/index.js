@@ -46,7 +46,7 @@ const PLANS = {
       'Projets illimités'
     ],
     allowedAnalyses: ['swot', 'porter', 'pestel', 'competitive', 'report'],
-    maxProjects: null, // Illimité
+    maxProjects: null,
     storageLimit: '50GB',
     isPremium: true,
     hasUnlimitedAnalyses: true,
@@ -72,7 +72,7 @@ const PLANS = {
       'Projets illimités'
     ],
     allowedAnalyses: ['swot', 'porter', 'pestel', 'competitive', 'report', 'integration_matrix', 'negotiation_simulator'],
-    maxProjects: null, // Illimité
+    maxProjects: null,
     storageLimit: 'Illimité',
     isPremium: true,
     hasUnlimitedAnalyses: true,
@@ -83,8 +83,73 @@ const PLANS = {
 };
 
 // ===========================================================================
+// HELPER : Applique un plan à un utilisateur (utilisé partout)
+// ===========================================================================
+async function applyPlanToUser(uid, planId, isAnnual = false, extraData = {}) {
+  const plan = PLANS[planId];
+  if (!plan) throw new Error(`Plan invalide: ${planId}`);
+
+  const userRef = admin.firestore().collection('users').doc(uid);
+  const userDoc = await userRef.get();
+  if (!userDoc.exists) throw new Error(`Utilisateur ${uid} introuvable`);
+
+  await userRef.update({
+    plan: planId,
+    isPremium: plan.isPremium,
+    features: plan.features,
+    allowedAnalyses: plan.allowedAnalyses,
+    maxProjects: plan.maxProjects,
+    storageLimit: plan.storageLimit,
+    tokenPerDay: plan.tokenPerDay,
+    hasUnlimitedAnalyses: plan.hasUnlimitedAnalyses,
+    hasAdvancedAnalyses: plan.hasAdvancedAnalyses,
+    canExportPDF: plan.canExportPDF,
+    hasAPIAccess: plan.hasAPIAccess || false,
+    subscriptionType: isAnnual ? 'annual' : 'monthly',
+    subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
+    subscriptionEndDate: isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
+    ...extraData,
+    tokenState: {
+      availableTokens: plan.tokens,
+      totalTokens: plan.tokens,
+      baseTokens: plan.tokens,
+      usedTokens: 0,
+      lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
+    }
+  });
+
+  console.log(`✅ Plan ${planId} appliqué à ${uid} (${isAnnual ? 'annuel' : 'mensuel'})`);
+}
+
+// ===========================================================================
+// HELPER : Crédite des tokens à un utilisateur
+// ===========================================================================
+async function creditTokens(uid, tokenAmount, metadata = {}) {
+  await admin.firestore().collection('users').doc(uid).update({
+    'tokenState.availableTokens': admin.firestore.FieldValue.increment(tokenAmount),
+    'tokenState.totalTokens': admin.firestore.FieldValue.increment(tokenAmount),
+    lastTokenPurchase: admin.firestore.FieldValue.serverTimestamp(),
+    ...metadata
+  });
+  console.log(`✅ +${tokenAmount} tokens crédités à ${uid}`);
+}
+
+// ===========================================================================
+// HELPER : Parse le client_reference_id (userId OU JSON encodé)
+// ===========================================================================
+function parseClientReference(clientRef) {
+  if (!clientRef) return {};
+  try {
+    const parsed = JSON.parse(clientRef);
+    if (typeof parsed === 'object') return parsed;
+  } catch (e) {
+    // Pas du JSON, c'est juste un userId
+  }
+  return { userId: clientRef };
+}
+
+// ===========================================================================
 // FONCTION POUR CONFIRMER UN ACHAT APRÈS RETOUR DE STRIPE
-// Appelée par le frontend quand l'utilisateur revient de Stripe
 // ===========================================================================
 exports.confirmPurchase = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -94,7 +159,6 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
   const { userId, sessionId, pendingData } = data;
   const uid = context.auth.uid;
 
-  // Vérifier que l'utilisateur correspond
   if (userId && userId !== uid) {
     throw new functions.https.HttpsError('permission-denied', 'Utilisateur non autorisé');
   }
@@ -102,12 +166,12 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
   try {
     // Récupérer la session Stripe
     const session = await stripeClient.checkout.sessions.retrieve(sessionId);
-    
+
     if (session.payment_status !== 'paid') {
       return { success: false, error: 'Paiement non effectué' };
     }
 
-    // Récupérer les données en attente depuis Firestore si non fournies
+    // Récupérer les données en attente
     let finalPendingData = pendingData;
     if (!finalPendingData) {
       const pendingDoc = await admin.firestore().collection('pending_purchases').doc(uid).get();
@@ -116,83 +180,46 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
       }
     }
 
-    // Si on a des données en attente (stockées avant la redirection)
-    if (finalPendingData) {
-      if (finalPendingData.type === 'token_pack') {
-        await admin.firestore().collection('users').doc(uid).update({
-          'tokenState.availableTokens': admin.firestore.FieldValue.increment(finalPendingData.tokenAmount),
-          'tokenState.totalTokens': admin.firestore.FieldValue.increment(finalPendingData.tokenAmount),
-          lastTokenPurchase: admin.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Nettoyer les données en attente
-        await admin.firestore().collection('pending_purchases').doc(uid).delete();
-        
-        console.log(`✅ Tokens crédités: +${finalPendingData.tokenAmount} pour ${uid} (pack: ${finalPendingData.packId})`);
-        return { success: true, type: 'token_pack' };
-      }
-      
-      if (finalPendingData.type === 'subscription') {
-        const plan = PLANS[finalPendingData.planId];
-        if (!plan) {
-          return { success: false, error: 'Plan invalide' };
-        }
-        
-        // Vérifier si l'abonnement est déjà actif (traité par le webhook)
-        const userDoc = await admin.firestore().collection('users').doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          // Vérifier si l'utilisateur a déjà ce plan actif
-          if (userData.plan === finalPendingData.planId && 
-              userData.subscriptionStartDate) {
-            // Vérifier si la date d'expiration est dans le futur
-            const now = new Date();
-            const endDate = userData.subscriptionEndDate?.toDate ? userData.subscriptionEndDate.toDate() : new Date(userData.subscriptionEndDate);
-            if (endDate > now) {
-              // Abonnement déjà activé et valide
-              console.log(`ℹ️ Abonnement déjà activé pour ${uid} (plan: ${finalPendingData.planId}, expire: ${endDate})`);
-              await admin.firestore().collection('pending_purchases').doc(uid).delete();
-              return { success: true, type: 'subscription', planId: finalPendingData.planId, alreadyActive: true };
-            }
-          }
-        }
-        
-        // Copier toutes les propriétés du plan vers l'utilisateur
-        await admin.firestore().collection('users').doc(uid).update({
-          plan: finalPendingData.planId,
-          isPremium: plan.isPremium,
-          features: plan.features,
-          allowedAnalyses: plan.allowedAnalyses,
-          maxProjects: plan.maxProjects,
-          storageLimit: plan.storageLimit,
-          tokenPerDay: plan.tokenPerDay,
-          hasUnlimitedAnalyses: plan.hasUnlimitedAnalyses,
-          hasAdvancedAnalyses: plan.hasAdvancedAnalyses,
-          canExportPDF: plan.canExportPDF,
-          hasAPIAccess: plan.hasAPIAccess || false,
-          subscriptionType: finalPendingData.isAnnual ? 'annual' : 'monthly',
-          subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
-          subscriptionEndDate: finalPendingData.isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
-          tokenState: {
-            availableTokens: plan.tokens,
-            totalTokens: plan.tokens,
-            baseTokens: plan.tokens,
-            usedTokens: 0,
-            lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
-          }
-        });
-        
-        // Nettoyer les données en attente
-        await admin.firestore().collection('pending_purchases').doc(uid).delete();
-        
-        console.log(`✅ Abonnement activé: ${uid} → Plan ${finalPendingData.planId}`);
-        return { success: true, type: 'subscription', planId: finalPendingData.planId };
-      }
+    if (!finalPendingData) {
+      return { success: false, error: 'Données d\'achat manquantes. Veuillez réessayer.' };
     }
 
-    // Si pas de données en attente, on ne peut pas déterminer l'achat
-    return { success: false, error: 'Données d\'achat manquantes. Veuillez réessayer.' };
-    
+    // ------- CAS 1 : PACK DE TOKENS -------
+    if (finalPendingData.type === 'token_pack') {
+      await creditTokens(uid, finalPendingData.tokenAmount, {
+        lastTokenPackId: finalPendingData.packId
+      });
+      await admin.firestore().collection('pending_purchases').doc(uid).delete();
+      return { success: true, type: 'token_pack' };
+    }
+
+    // ------- CAS 2 : ABONNEMENT -------
+    if (finalPendingData.type === 'subscription') {
+      // Vérifier si déjà actif
+      const userDoc = await admin.firestore().collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData.plan === finalPendingData.planId && userData.subscriptionStartDate) {
+          const endDate = userData.subscriptionEndDate?.toDate
+            ? userData.subscriptionEndDate.toDate()
+            : new Date(userData.subscriptionEndDate);
+          if (endDate > new Date()) {
+            console.log(`ℹ️ Abonnement déjà actif pour ${uid}`);
+            await admin.firestore().collection('pending_purchases').doc(uid).delete();
+            return { success: true, type: 'subscription', planId: finalPendingData.planId, alreadyActive: true };
+          }
+        }
+      }
+
+      // Appliquer le plan
+      await applyPlanToUser(uid, finalPendingData.planId, finalPendingData.isAnnual === true);
+      await admin.firestore().collection('pending_purchases').doc(uid).delete();
+
+      return { success: true, type: 'subscription', planId: finalPendingData.planId };
+    }
+
+    return { success: false, error: 'Type d\'achat inconnu' };
+
   } catch (error) {
     console.error('❌ Erreur confirmPurchase:', error);
     throw new functions.https.HttpsError('internal', error.message);
@@ -200,7 +227,7 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
 });
 
 // ===========================================================================
-// FONCTION POUR CRÉER UNE SESSION CHECKOUT STRIPE (pour les abonnements)
+// FONCTION POUR CRÉER UNE SESSION CHECKOUT STRIPE
 // ===========================================================================
 exports.createStripeCheckoutSession = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -210,13 +237,15 @@ exports.createStripeCheckoutSession = functions.https.onCall(async (data, contex
   const { userId, priceId, planId, isAnnual, successUrl, cancelUrl } = data;
   const uid = context.auth.uid;
 
-  // Vérifier que l'utilisateur correspond
   if (userId && userId !== uid) {
     throw new functions.https.HttpsError('permission-denied', 'Utilisateur non autorisé');
   }
 
+  if (!priceId) {
+    throw new functions.https.HttpsError('invalid-argument', 'priceId manquant');
+  }
+
   try {
-    // Créer la session Checkout Stripe
     const session = await stripeClient.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -226,19 +255,21 @@ exports.createStripeCheckoutSession = functions.https.onCall(async (data, contex
       mode: 'subscription',
       success_url: successUrl || `${functions.config().app.url}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${functions.config().app.url}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`,
+      client_reference_id: uid,
       metadata: {
         userId: uid,
         planId: planId,
-        isAnnual: isAnnual,
+        isAnnual: String(isAnnual === true),
         type: 'subscription'
       }
     });
 
-    console.log(`✅ Session Checkout créée: ${session.id} pour ${uid} (plan: ${planId}, ${isAnnual ? 'annuel' : 'mensuel'})`);
-    
-    return { 
-      success: true, 
-      sessionId: session.id 
+    console.log(`✅ Session Checkout créée: ${session.id} pour ${uid} (plan: ${planId})`);
+
+    return {
+      success: true,
+      sessionId: session.id,
+      url: session.url
     };
 
   } catch (error) {
@@ -248,15 +279,12 @@ exports.createStripeCheckoutSession = functions.https.onCall(async (data, contex
 });
 
 // ===========================================================================
-// FONCTION POUR VÉRIFIER L'ABONNEMENT (compatibilité)
+// ALIAS DE COMPATIBILITÉ
 // ===========================================================================
 exports.confirmStripeSubscription = functions.https.onCall(async (data, context) => {
   return exports.confirmPurchase(data, context);
 });
 
-// ===========================================================================
-// FONCTION POUR VÉRIFIER UN PAIEMENT DE TOKENS (compatibilité avec token-shop.js)
-// ===========================================================================
 exports.confirmStripePayment = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Utilisateur non authentifié');
@@ -266,37 +294,29 @@ exports.confirmStripePayment = functions.https.onCall(async (data, context) => {
   const uid = userId || context.auth.uid;
 
   try {
-    // Récupérer la session Stripe
     const session = await stripeClient.checkout.sessions.retrieve(sessionId);
-    
+
     if (session.payment_status !== 'paid') {
       return { success: false, error: 'Paiement non effectué' };
     }
 
-    // Récupérer les données en attente depuis Firestore
     const pendingDoc = await admin.firestore().collection('pending_purchases').doc(uid).get();
     const pendingData = pendingDoc.exists ? pendingDoc.data() : null;
-    
+
     if (pendingData && pendingData.type === 'token_pack') {
-      await admin.firestore().collection('users').doc(uid).update({
-        'tokenState.availableTokens': admin.firestore.FieldValue.increment(pendingData.tokenAmount),
-        'tokenState.totalTokens': admin.firestore.FieldValue.increment(pendingData.tokenAmount),
-        lastTokenPurchase: admin.firestore.FieldValue.serverTimestamp()
+      await creditTokens(uid, pendingData.tokenAmount, {
+        lastTokenPackId: pendingData.packId
       });
-      
-      // Nettoyer
       await pendingDoc.ref.delete();
-      
-      console.log(`✅ Tokens crédités: +${pendingData.tokenAmount} pour ${uid}`);
-      return { 
-        success: true, 
+      return {
+        success: true,
         tokensAdded: pendingData.tokenAmount,
-        packId: pendingData.packId 
+        packId: pendingData.packId
       };
     }
 
-    return { success: false, error: 'Aucune données d\'achat en attente trouvée' };
-    
+    return { success: false, error: 'Aucune donnée d\'achat en attente' };
+
   } catch (error) {
     console.error('❌ Erreur confirmStripePayment:', error);
     throw new functions.https.HttpsError('internal', error.message);
@@ -304,7 +324,7 @@ exports.confirmStripePayment = functions.https.onCall(async (data, context) => {
 });
 
 // ===========================================================================
-// WEBHOOK POUR LES ABONNEMENTS (gère les résiliations)
+// WEBHOOK STRIPE
 // ===========================================================================
 exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -318,117 +338,141 @@ exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  const userId = event.data.object.metadata?.userId;
+  console.log(`📩 Webhook reçu: ${event.type}`);
 
-  // =========================================================================
-  // GESTION DES RÉSILIATIONS D'ABONNEMENTS
-  // =========================================================================
-  if (event.type === 'customer.subscription.deleted') {
-    const subscription = event.data.object;
-    const customerId = subscription.customer;
-    
-    // Trouver l'utilisateur via customerId ou userId dans metadata
-    let userQuery;
-    if (userId) {
-      userQuery = await admin.firestore().collection('users').where('userId', '==', userId).limit(1).get();
-    } else {
-      userQuery = await admin.firestore().collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
-    }
-    
-    if (!userQuery.empty) {
-      const userDoc = userQuery.docs[0];
-      const uid = userDoc.id;
-      const freePlan = PLANS.free;
-      
-      await userDoc.ref.update({
-        plan: 'free',
-        isPremium: freePlan.isPremium,
-        features: freePlan.features,
-        allowedAnalyses: freePlan.allowedAnalyses,
-        maxProjects: freePlan.maxProjects,
-        storageLimit: freePlan.storageLimit,
-        tokenPerDay: freePlan.tokenPerDay,
-        hasUnlimitedAnalyses: freePlan.hasUnlimitedAnalyses,
-        hasAdvancedAnalyses: freePlan.hasAdvancedAnalyses,
-        canExportPDF: freePlan.canExportPDF,
-        hasAPIAccess: freePlan.hasAPIAccess || false,
-        subscriptionEndDate: admin.firestore.FieldValue.serverTimestamp(),
-        subscriptionType: null,
-        tokenState: {
-          availableTokens: freePlan.tokens,
-          totalTokens: freePlan.tokens,
-          baseTokens: freePlan.tokens,
-          usedTokens: 0,
-          lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
-        }
-      });
-      console.log(`✅ Webhook: ${uid} repasse au plan Free (résiliation)`);
-    }
-  }
+  try {
+    // =======================================================================
+    // CHECKOUT SESSION COMPLETED (Payment Links ET Checkout Sessions)
+    // =======================================================================
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const metadata = session.metadata || {};
 
-  // =========================================================================
-  // GESTION DES PAIEMENTS (Payment Links et Checkout Sessions)
-  // =========================================================================
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const metadata = session.metadata || {};
-    
-    // Si c'est une subscription avec userId dans metadata
-    if (metadata.type === 'subscription' && metadata.userId) {
-      const uid = metadata.userId;
-      const planId = metadata.planId;
-      const isAnnual = metadata.isAnnual === 'true' || metadata.isAnnual === true;
-      const plan = PLANS[planId];
-      
-      if (!plan) {
-        console.error(`❌ Webhook: Plan invalide ${planId} pour ${uid}`);
-        return;
+      // ✅ Récupère userId depuis metadata OU client_reference_id
+      const clientRef = parseClientReference(session.client_reference_id);
+      let uid = metadata.userId || clientRef.userId;
+
+      // Fallback : chercher par email
+      if (!uid && session.customer_details?.email) {
+        const q = await admin.firestore()
+          .collection('users')
+          .where('email', '==', session.customer_details.email)
+          .limit(1)
+          .get();
+        if (!q.empty) uid = q.docs[0].id;
       }
-      
-      // Trouver l'utilisateur
-      const userDoc = await admin.firestore().collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        console.error(`❌ Webhook: Utilisateur ${uid} non trouvé`);
-        return;
-      }
-      
-      // Mettre à jour l'utilisateur avec l'abonnement
-      await userDoc.ref.update({
-        plan: planId,
-        isPremium: plan.isPremium,
-        features: plan.features,
-        allowedAnalyses: plan.allowedAnalyses,
-        maxProjects: plan.maxProjects,
-        storageLimit: plan.storageLimit,
-        tokenPerDay: plan.tokenPerDay,
-        hasUnlimitedAnalyses: plan.hasUnlimitedAnalyses,
-        hasAdvancedAnalyses: plan.hasAdvancedAnalyses,
-        canExportPDF: plan.canExportPDF,
-        hasAPIAccess: plan.hasAPIAccess || false,
-        subscriptionType: isAnnual ? 'annual' : 'monthly',
-        subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
-        subscriptionEndDate: isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
-        stripeCustomerId: session.customer,
-        tokenState: {
-          availableTokens: plan.tokens,
-          totalTokens: plan.tokens,
-          baseTokens: plan.tokens,
-          usedTokens: 0,
-          lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
-        }
-      });
-      
-      // Nettoyer les données en attente si elles existent
-      await admin.firestore().collection('pending_purchases').doc(uid).delete();
-      
-      console.log(`✅ Webhook: Abonnement activé pour ${uid} → Plan ${planId} (${isAnnual ? 'annuel' : 'mensuel'}) via session ${session.id}`);
-    } else {
-      // Pour les Payment Links (sans userId), le crédit est géré par confirmPurchase appelée par le frontend
-      console.log(`ℹ️ Paiement reçu via Payment Link: ${session.id} (crédit géré par frontend)`);
-    }
-  }
 
-  res.json({received: true});
+      if (!uid) {
+        console.warn(`⚠️ Webhook: userId introuvable pour session ${session.id}`);
+        return res.json({ received: true, warning: 'userId introuvable' });
+      }
+
+      // Détecter le type
+      const type = metadata.type || clientRef.type;
+      const planId = metadata.planId || clientRef.planId;
+      const isAnnual = metadata.isAnnual === 'true'
+                    || metadata.isAnnual === true
+                    || clientRef.isAnnual === true
+                    || clientRef.isAnnual === 'true';
+
+      // ------- ABONNEMENT -------
+      if (type === 'subscription' || session.mode === 'subscription') {
+        if (!planId || !PLANS[planId]) {
+          console.error(`❌ Webhook: planId invalide "${planId}" pour ${uid}`);
+          return res.json({ received: true, error: 'planId invalide' });
+        }
+
+        await applyPlanToUser(uid, planId, isAnnual, {
+          stripeCustomerId: session.customer,
+          stripeSubscriptionId: session.subscription
+        });
+
+        await admin.firestore().collection('pending_purchases').doc(uid).delete();
+
+        console.log(`✅ Webhook: Abonnement ${planId} activé pour ${uid}`);
+        return res.json({ received: true, activated: 'subscription', planId });
+      }
+
+      // ------- PACK DE TOKENS -------
+      // Récupérer depuis pending_purchases
+      const pendingDoc = await admin.firestore().collection('pending_purchases').doc(uid).get();
+      const pendingData = pendingDoc.exists ? pendingDoc.data() : null;
+
+      if (pendingData && pendingData.type === 'token_pack') {
+        await creditTokens(uid, pendingData.tokenAmount, {
+          lastTokenPackId: pendingData.packId
+        });
+        await pendingDoc.ref.delete();
+        console.log(`✅ Webhook: +${pendingData.tokenAmount} tokens pour ${uid}`);
+        return res.json({ received: true, activated: 'token_pack' });
+      }
+
+      console.log(`ℹ️ Webhook: Session ${session.id} traitée (aucune action)`);
+    }
+
+    // =======================================================================
+    // RÉSILIATION D'ABONNEMENT
+    // =======================================================================
+    if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+      const customerId = subscription.customer;
+      const subscriptionId = subscription.id;
+
+      // Chercher par stripeSubscriptionId en priorité
+      let userQuery = await admin.firestore()
+        .collection('users')
+        .where('stripeSubscriptionId', '==', subscriptionId)
+        .limit(1)
+        .get();
+
+      // Fallback : stripeCustomerId
+      if (userQuery.empty) {
+        userQuery = await admin.firestore()
+          .collection('users')
+          .where('stripeCustomerId', '==', customerId)
+          .limit(1)
+          .get();
+      }
+
+      if (!userQuery.empty) {
+        const userDoc = userQuery.docs[0];
+        const freePlan = PLANS.free;
+
+        await userDoc.ref.update({
+          plan: 'free',
+          isPremium: freePlan.isPremium,
+          features: freePlan.features,
+          allowedAnalyses: freePlan.allowedAnalyses,
+          maxProjects: freePlan.maxProjects,
+          storageLimit: freePlan.storageLimit,
+          tokenPerDay: freePlan.tokenPerDay,
+          hasUnlimitedAnalyses: freePlan.hasUnlimitedAnalyses,
+          hasAdvancedAnalyses: freePlan.hasAdvancedAnalyses,
+          canExportPDF: freePlan.canExportPDF,
+          hasAPIAccess: false,
+          subscriptionEndDate: admin.firestore.FieldValue.serverTimestamp(),
+          subscriptionType: null,
+          stripeSubscriptionId: null,
+          tokenState: {
+            availableTokens: freePlan.tokens,
+            totalTokens: freePlan.tokens,
+            baseTokens: freePlan.tokens,
+            usedTokens: 0,
+            lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
+          }
+        });
+        console.log(`✅ Webhook: ${userDoc.id} → plan Free (résiliation)`);
+      } else {
+        console.warn(`⚠️ Webhook: Résiliation mais utilisateur introuvable (customer: ${customerId})`);
+      }
+    }
+
+    res.json({ received: true });
+
+  } catch (err) {
+    console.error('❌ Erreur traitement webhook:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===========================================================================
@@ -444,4 +488,4 @@ function getMonthlyEndDate() {
   const date = new Date();
   date.setMonth(date.getMonth() + 1);
   return admin.firestore.Timestamp.fromDate(date);
-}
+                    }
