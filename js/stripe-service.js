@@ -1,3 +1,6 @@
+// DEFINIR IMMÉDIATEMENT POUR ÉVITER TOUTE ERREUR DE RÉFÉRENCE
+var SubscriptionPlans = window.SubscriptionPlans = { FREE: 'free', PRO: 'pro', ENTERPRISE: 'enterprise' };
+
 // =============================================================================
 // STRIPE-SERVICE.JS - Service de paiement via Payment Links
 // Solution ULTRA-SIMPLE : les URLs sont intégrées directement dans ce fichier
@@ -7,14 +10,9 @@
 // db et authService sont définis globalement dans firebase-config.js
 
 // =============================================================================
-// CONSTANTES DES PLANS - DÉFINIES EN PREMIER POUR ÉVITER LES ERREURS DE CHARGEMENT
+// CONSTANTES DES PLANS - DÉJÀ DÉFINIES PLUS HAUT
 // =============================================================================
-// Définir sur window ET dans le scope global (var) pour être accessible partout
-var SubscriptionPlans = window.SubscriptionPlans = {
-  FREE: 'free',
-  PRO: 'pro',
-  ENTERPRISE: 'enterprise'
-};
+// SubscriptionPlans est déjà défini en première ligne pour éviter les erreurs
 
 // =============================================================================
 // CONFIGURATION DES PRICE IDs STRIPE
