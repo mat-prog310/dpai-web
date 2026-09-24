@@ -6,7 +6,6 @@
     <title>DPAI Strategy - L'intelligence stratégique pour votre croissance externe</title>
     <meta name="description" content="DPAI Strategy offre des solutions d'analyse stratégique avancée pour la croissance externe. Abonnements flexibles, système de tokens, et outils puissants pour les professionnels du M&A.">
     
-    <!-- Firebase et configuration seront chargés à la fin du body -->
     <!-- Stripe -->
     <script src="https://js.stripe.com/v3/"></script>
     
@@ -576,17 +575,18 @@
         <i class="fas fa-arrow-up"></i>
     </a>
 
-    <!-- Firebase SDK (doit être chargé AVANT firebase-config.js) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
     
-    <!-- Configuration Firebase (doit être chargée APRES les SDK Firebase) -->
+    <!-- Configuration Firebase -->
     <script src="js/firebase-config.js"></script>
     
-    <!-- Autres scripts (doivent être chargés APRES firebase-config.js) -->
+    <!-- Autres scripts (⚠️ ORDRE IMPORTANT) -->
     <script src="js/auth.js"></script>
+    <script src="js/payment-links-config.js"></script>   <!-- ✅ AJOUTÉ : URLs Stripe -->
     <script src="js/tokens.js"></script>
     <script src="js/stripe-service.js"></script>
     <script src="js/service-modal.js"></script>
