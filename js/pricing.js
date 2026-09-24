@@ -331,10 +331,17 @@ async function confirmTokenPackPurchase(packId) {
         const result = await stripeService.purchaseTokenPack(packId, user.uid);
         
         if (result.success) {
-            showAlert('success', 'Succès', `Vos tokens ont été ajoutés à votre compte !`);
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            // NE PAS afficher de succès ici - la redirection vers Stripe va avoir lieu
+            // Le succès sera affiché après vérification du paiement dans checkStripeSubscriptionStatus
+            if (result.isFree) {
+                // Pour les packs gratuits, afficher succès car pas de redirection
+                showAlert('success', 'Succès', `Vos tokens ont été ajoutés à votre compte !`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+            // Pour les packs payants, stripeService.purchaseTokenPack redirige vers Stripe
+            // On ne fait rien ici, la redirection a déjà eu lieu
         } else {
             showAlert('error', 'Erreur', result.error || 'Une erreur est survenue.');
         }
@@ -416,16 +423,17 @@ async function checkStripeSubscriptionStatus() {
     // Analyser les paramètres de l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
-    const planId = urlParams.get('planId');
     const sessionId = urlParams.get('session_id');
     
-    // Si on revient d'un paiement réussi
-    if (success === 'true' && planId) {
+    // Si on revient d'un paiement (succès ou échec)
+    if (success === 'true' || success === 'false' || urlParams.get('canceled') === 'true') {
         const user = authService.currentUser;
+        
+        // Nettoyer l'URL après traitement
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         if (!user) {
             showAlert('error', 'Erreur', 'Vous devez être connecté pour activer votre abonnement.');
-            // Nettoyer l'URL
-            window.history.replaceState({}, document.title, window.location.pathname);
             return;
         }
         
@@ -434,71 +442,82 @@ async function checkStripeSubscriptionStatus() {
         const isFirebaseAvailable = typeof window.firebase !== 'undefined' && window.firebase;
         const isDemoMode = !isFirebaseAvailable || isFileProtocol;
         
-        if (isDemoMode) {
-            // Mode démo : activer l'abonnement automatiquement
-            try {
-                // Mettre à jour le plan de l'utilisateur en mode démo
-                if (authService.userData) {
-                    authService.userData.plan = planId;
-                    
-                    // Définir un délai d'expiration pour l'abonnement démo (30 jours)
-                    const expirationDate = new Date();
-                    expirationDate.setDate(expirationDate.getDate() + 30);
-                    authService.userData.subscriptionExpiry = expirationDate.toISOString();
-                    
-                    showAlert('success', 'Succès', `Abonnement ${planId.toUpperCase()} activé ! (mode démo - 30 jours)`);
-                } else {
-                    showAlert('error', 'Erreur', 'Impossible de mettre à jour l\'abonnement en mode démo.');
+        if (success === 'true') {
+            if (isDemoMode) {
+                // Mode démo : activer l'abonnement automatiquement
+                // Récupérer le planId depuis pending_purchases
+                try {
+                    const pendingDoc = await db.collection('pending_purchases').doc(user.uid).get();
+                    if (pendingDoc.exists) {
+                        const pendingData = pendingDoc.data();
+                        const planId = pendingData.planId;
+                        
+                        if (planId && authService.userData) {
+                            authService.userData.plan = planId;
+                            
+                            // Définir un délai d'expiration pour l'abonnement démo (30 jours)
+                            const expirationDate = new Date();
+                            expirationDate.setDate(expirationDate.getDate() + 30);
+                            authService.userData.subscriptionExpiry = expirationDate.toISOString();
+                            
+                            showAlert('success', 'Succès', `Abonnement ${planId.toUpperCase()} activé ! (mode démo - 30 jours)`);
+                            return;
+                        }
+                    }
+                    showAlert('error', 'Erreur', 'Impossible d\'activer l\'abonnement en mode démo - aucune donnée d\'achat en attente.');
+                } catch (error) {
+                    console.error('[STRIPE] Erreur mode démo abonnement:', error);
+                    showAlert('error', 'Erreur', 'Impossible d\'activer l\'abonnement en mode démo.');
                 }
-            } catch (error) {
-                console.error('[STRIPE] Erreur mode démo abonnement:', error);
-                showAlert('error', 'Erreur', 'Impossible d\'activer l\'abonnement en mode démo.');
-            }
-        } else {
-            // Mode production : vérifier le paiement via Stripe
-            try {
-                // Créer une référence Firebase Functions
-                const functions = firebase.functions();
-                
-                // Appeler la fonction pour vérifier l'abonnement
-                const confirmSubscription = functions.httpsCallable('confirmStripeSubscription');
-                const result = await confirmSubscription({ 
-                  userId: user.uid, 
-                  sessionId: sessionId, 
-                  planId: planId 
-                });
-                
-                if (result.data.success) {
-                    showAlert('success', 'Succès', `Abonnement ${planId.toUpperCase()} activé !`);
+            } else {
+                // Mode production : vérifier le paiement via Stripe
+                try {
+                    const functions = firebase.functions();
                     
-                    // Recharger les données utilisateur
-                    if (typeof authService.loadUserData === 'function') {
-                        await authService.loadUserData(user.uid);
+                    // Récupérer le planId depuis pending_purchases
+                    const pendingDoc = await db.collection('pending_purchases').doc(user.uid).get();
+                    let planId = null;
+                    if (pendingDoc.exists) {
+                        const pendingData = pendingDoc.data();
+                        planId = pendingData.planId;
                     }
                     
-                    // Déclencher une mise à jour de l'UI pour que le dashboard se rafraîchisse
-                    if (typeof authService.updateUI === 'function') {
-                        authService.updateUI();
-                    }
+                    // Appeler la fonction pour vérifier l'abonnement
+                    const confirmSubscription = functions.httpsCallable('confirmStripeSubscription');
+                    const result = await confirmSubscription({ 
+                      userId: user.uid, 
+                      sessionId: sessionId, 
+                      planId: planId 
+                    });
                     
-                    // Recharger la page pour appliquer les changements de plan
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    showAlert('error', 'Erreur', result.data.error || 'Abonnement non activé.');
+                    if (result.data.success) {
+                        showAlert('success', 'Succès', `Abonnement ${(result.data.planId || planId || '').toUpperCase()} activé !`);
+                        
+                        // Recharger les données utilisateur
+                        if (typeof authService.loadUserData === 'function') {
+                            await authService.loadUserData(user.uid);
+                        }
+                        
+                        // Déclencher une mise à jour de l'UI
+                        if (typeof authService.updateUI === 'function') {
+                            authService.updateUI();
+                        }
+                        
+                        // Recharger la page pour appliquer les changements de plan
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('error', 'Erreur', result.data.error || 'Abonnement non activé.');
+                    }
+                } catch (error) {
+                    console.error('[STRIPE] Erreur vérification abonnement:', error);
+                    showAlert('warning', 'Attention', 'Abonnement peut-être activé. Veuillez rafraîchir la page ou contacter le support.');
                 }
-            } catch (error) {
-                console.error('[STRIPE] Erreur vérification abonnement:', error);
-                showAlert('warning', 'Attention', 'Abonnement peut-être activé. Veuillez rafraîchir la page ou contacter le support.');
             }
+        } else if (success === 'false' || urlParams.get('canceled') === 'true') {
+            showAlert('warning', 'Paiement annulé', 'Vous avez annulé l\'abonnement.');
         }
-        
-        // Nettoyer l'URL après traitement
-        window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (success === 'false' || urlParams.get('canceled') === 'true') {
-        showAlert('warning', 'Paiement annulé', 'Vous avez annulé l\'abonnement.');
-        window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 

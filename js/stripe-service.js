@@ -50,6 +50,14 @@ class StripeService {
   // ===========================================================================
   async purchaseTokenPack(packId, userId) {
     try {
+      // Définition locale des packs de tokens (évite la dépendance externe)
+      const TokenPacks = [
+        { id: 'discovery', name: 'Découverte', tokenAmount: 100, priceEuros: 12.00 },
+        { id: 'boost', name: 'Boost', tokenAmount: 300, priceEuros: 30.00 },
+        { id: 'expert', name: 'Expert', tokenAmount: 600, priceEuros: 55.00 },
+        { id: 'unique_report', name: 'Rapport unique', tokenAmount: 250, priceEuros: 25.00 }
+      ];
+      
       const pack = TokenPacks.find(p => p.id === packId);
       if (!pack) {
         throw new Error('Pack de tokens introuvable');
@@ -153,11 +161,8 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // Trouver le plan
-      const plan = SubscriptionPlans.find(p => p.id === planId);
-      if (!plan) {
-        throw new Error(`Plan ${planId} introuvable.`);
-      }
+      // Vérification redondante supprimée - planId déjà validé via planPrices ci-dessus
+      // (SubscriptionPlans n'est pas défini dans ce fichier, mais la vérification des prix suffit)
 
       // Récupérer l'URL du Payment Link
       const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;

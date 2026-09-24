@@ -311,16 +311,19 @@ async function purchaseTokenPack(packId) {
         const result = await stripeService.purchaseTokenPack(packId, user.uid);
         
         if (result.success) {
-            // Fermer le modal
-            const modal = document.getElementById('tokenPackModal');
-            if (modal) modal.classList.remove('visible');
-            
-            showAlert('success', 'Succès', `Votre achat de ${pack.tokenAmount} tokens a été traité avec succès !`);
-            
-            // Recharger la page pour mettre à jour les tokens
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            // NE PAS afficher de succès ici - la redirection vers Stripe va avoir lieu
+            // Le succès sera affiché après vérification du paiement dans checkStripePaymentStatus
+            if (result.isFree) {
+                // Pour les packs gratuits, afficher succès car pas de redirection
+                const modal = document.getElementById('tokenPackModal');
+                if (modal) modal.classList.remove('visible');
+                showAlert('success', 'Succès', `Votre achat de ${pack.tokenAmount} tokens a été traité avec succès !`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+            // Pour les packs payants, stripeService.purchaseTokenPack redirige vers Stripe
+            // On ne fait rien ici, la redirection a déjà eu lieu
         } else {
             showAlert('error', 'Erreur', result.error || 'Une erreur est survenue lors de l\'achat.');
         }
@@ -364,16 +367,17 @@ async function checkStripePaymentStatus() {
     // Analyser les paramètres de l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
-    const packId = urlParams.get('packId');
     const sessionId = urlParams.get('session_id');
     
-    // Si on revient d'un paiement réussi
-    if (success === 'true' && packId) {
+    // Si on revient d'un paiement (succès ou échec)
+    if (success === 'true' || success === 'false' || urlParams.get('canceled') === 'true') {
         const user = authService.currentUser;
+        
+        // Nettoyer l'URL après traitement
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         if (!user) {
             showAlert('error', 'Erreur', 'Vous devez être connecté pour recevoir vos tokens.');
-            // Nettoyer l'URL
-            window.history.replaceState({}, document.title, window.location.pathname);
             return;
         }
         
@@ -382,102 +386,94 @@ async function checkStripePaymentStatus() {
         const isFirebaseAvailable = typeof window.firebase !== 'undefined' && window.firebase;
         const isDemoMode = !isFirebaseAvailable || isFileProtocol;
         
-        if (isDemoMode) {
-            // Mode démo : créditer les tokens automatiquement
-            try {
-                const pack = TokenPacks.find(p => p.id === packId);
-                if (pack) {
-                    // Simuler l'ajout des tokens en mode démo
-                    if (window.TokenManager) {
-                        const currentAvailable = window.TokenManager._demoTokens || 9999;
-                        const newAvailable = currentAvailable + pack.tokenAmount;
-                        window.TokenManager._demoTokens = newAvailable;
-                        
-                        // Redéfinir le getter
-                        Object.defineProperty(window.TokenManager, 'availableTokens', {
-                            get: function() { 
-                                return window.TokenManager._demoTokens || 9999; 
-                            },
-                            configurable: true
-                        });
-                        
-                        // Mettre à jour userData
-                        if (!window.TokenManager.userData) {
-                            window.TokenManager.userData = {};
+        if (success === 'true') {
+            if (isDemoMode) {
+                // Mode démo : créditer les tokens automatiquement
+                // Récupérer le packId depuis pending_purchases
+                try {
+                    const pendingDoc = await db.collection('pending_purchases').doc(user.uid).get();
+                    if (pendingDoc.exists) {
+                        const pendingData = pendingDoc.data();
+                        if (pendingData.type === 'token_pack') {
+                            const pack = TokenPacks.find(p => p.id === pendingData.packId);
+                            if (pack && window.TokenManager) {
+                                const currentAvailable = window.TokenManager._demoTokens || 9999;
+                                const newAvailable = currentAvailable + pack.tokenAmount;
+                                window.TokenManager._demoTokens = newAvailable;
+                                
+                                Object.defineProperty(window.TokenManager, 'availableTokens', {
+                                    get: function() { 
+                                        return window.TokenManager._demoTokens || 9999; 
+                                    },
+                                    configurable: true
+                                });
+                                
+                                if (!window.TokenManager.userData) {
+                                    window.TokenManager.userData = {};
+                                }
+                                if (!window.TokenManager.userData.tokenState) {
+                                    window.TokenManager.userData.tokenState = {
+                                        availableTokens: 9999,
+                                        usedTokens: 0,
+                                        totalTokens: 9999
+                                    };
+                                }
+                                window.TokenManager.userData.tokenState.availableTokens = newAvailable;
+                                window.TokenManager.userData.tokenState.totalTokens += pack.tokenAmount;
+                                
+                                if (typeof updateTokenDisplay === 'function') {
+                                    updateTokenDisplay();
+                                }
+                                
+                                showAlert('success', 'Succès', `Paiement simulé ! ${pack.tokenAmount} tokens ajoutés à votre compte (mode démo).`);
+                                return;
+                            }
                         }
-                        if (!window.TokenManager.userData.tokenState) {
-                            window.TokenManager.userData.tokenState = {
-                                availableTokens: 9999,
-                                usedTokens: 0,
-                                totalTokens: 9999
-                            };
-                        }
-                        window.TokenManager.userData.tokenState.availableTokens = newAvailable;
-                        window.TokenManager.userData.tokenState.totalTokens += pack.tokenAmount;
+                    }
+                    showAlert('error', 'Erreur', 'Impossible de créditer les tokens en mode démo - aucune donnée d\'achat en attente.');
+                } catch (error) {
+                    console.error('[STRIPE] Erreur mode démo:', error);
+                    showAlert('error', 'Erreur', 'Impossible de créditer les tokens en mode démo.');
+                }
+            } else {
+                // Mode production : vérifier le paiement via Stripe
+                try {
+                    const functions = firebase.functions();
+                    const confirmPayment = functions.httpsCallable('confirmStripePayment');
+                    const result = await confirmPayment({ 
+                      userId: user.uid, 
+                      sessionId: sessionId 
+                    });
+                    
+                    if (result.data.success) {
+                        showAlert('success', 'Succès', `Paiement validé ! ${result.data.tokensAdded} tokens ajoutés à votre compte.`);
                         
-                        // Mettre à jour l'UI
+                        if (typeof loadUserTokenData === 'function') {
+                            await loadUserTokenData(user.uid);
+                        }
+                        
+                        if (typeof authService !== 'undefined' && typeof authService.updateUI === 'function') {
+                            authService.updateUI();
+                        }
+                        
                         if (typeof updateTokenDisplay === 'function') {
                             updateTokenDisplay();
                         }
                         
-                        showAlert('success', 'Succès', `Paiement simulé ! ${pack.tokenAmount} tokens ajoutés à votre compte (mode démo).`);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showAlert('error', 'Erreur', result.data.error || 'Paiement non validé.');
                     }
-                } else {
-                    showAlert('error', 'Erreur', `Pack ${packId} introuvable.`);
+                } catch (error) {
+                    console.error('[STRIPE] Erreur vérification paiement:', error);
+                    showAlert('warning', 'Attention', 'Paiement peut-être réussi. Veuillez rafraîchir la page ou contacter le support si les tokens ne sont pas crédités.');
                 }
-            } catch (error) {
-                console.error('[STRIPE] Erreur mode démo:', error);
-                showAlert('error', 'Erreur', 'Impossible de créditer les tokens en mode démo.');
             }
-        } else {
-            // Mode production : vérifier le paiement via Stripe
-            try {
-                // Créer une référence Firebase Functions
-                const functions = firebase.functions();
-                
-                // Appeler la fonction pour vérifier le paiement
-                const confirmPayment = functions.httpsCallable('confirmStripePayment');
-                const result = await confirmPayment({ 
-                  userId: user.uid, 
-                  sessionId: sessionId 
-                });
-                
-                if (result.data.success) {
-                    showAlert('success', 'Succès', `Paiement validé ! ${result.data.tokensAdded} tokens ajoutés à votre compte.`);
-                    
-                    // Recharger les données utilisateur
-                    if (typeof loadUserTokenData === 'function') {
-                        await loadUserTokenData(user.uid);
-                    }
-                    
-                    // Déclencher une mise à jour de l'UI pour que le dashboard se rafraîchisse
-                    if (typeof authService !== 'undefined' && typeof authService.updateUI === 'function') {
-                        authService.updateUI();
-                    }
-                    
-                    // Mettre à jour l'UI
-                    if (typeof updateTokenDisplay === 'function') {
-                        updateTokenDisplay();
-                    }
-                    
-                    // Recharger la page pour appliquer les changements
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    showAlert('error', 'Erreur', result.data.error || 'Paiement non validé.');
-                }
-            } catch (error) {
-                console.error('[STRIPE] Erreur vérification paiement:', error);
-                showAlert('warning', 'Attention', 'Paiement peut-être réussi. Veuillez rafraîchir la page ou contacter le support si les tokens ne sont pas crédités.');
-            }
+        } else if (success === 'false' || urlParams.get('canceled') === 'true') {
+            showAlert('warning', 'Paiement annulé', 'Vous avez annulé le paiement.');
         }
-        
-        // Nettoyer l'URL après traitement
-        window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (success === 'false' || urlParams.get('canceled') === 'true') {
-        showAlert('warning', 'Paiement annulé', 'Vous avez annulé le paiement.');
-        window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
