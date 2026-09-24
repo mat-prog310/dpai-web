@@ -138,6 +138,25 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
           return { success: false, error: 'Plan invalide' };
         }
         
+        // Vérifier si l'abonnement est déjà actif (traité par le webhook)
+        const userDoc = await admin.firestore().collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          // Vérifier si l'utilisateur a déjà ce plan actif
+          if (userData.plan === finalPendingData.planId && 
+              userData.subscriptionStartDate) {
+            // Vérifier si la date d'expiration est dans le futur
+            const now = new Date();
+            const endDate = userData.subscriptionEndDate?.toDate ? userData.subscriptionEndDate.toDate() : new Date(userData.subscriptionEndDate);
+            if (endDate > now) {
+              // Abonnement déjà activé et valide
+              console.log(`ℹ️ Abonnement déjà activé pour ${uid} (plan: ${finalPendingData.planId}, expire: ${endDate})`);
+              await admin.firestore().collection('pending_purchases').doc(uid).delete();
+              return { success: true, type: 'subscription', planId: finalPendingData.planId, alreadyActive: true };
+            }
+          }
+        }
+        
         // Copier toutes les propriétés du plan vers l'utilisateur
         await admin.firestore().collection('users').doc(uid).update({
           plan: finalPendingData.planId,
@@ -176,6 +195,54 @@ exports.confirmPurchase = functions.https.onCall(async (data, context) => {
     
   } catch (error) {
     console.error('❌ Erreur confirmPurchase:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// ===========================================================================
+// FONCTION POUR CRÉER UNE SESSION CHECKOUT STRIPE (pour les abonnements)
+// ===========================================================================
+exports.createStripeCheckoutSession = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Utilisateur non authentifié');
+  }
+
+  const { userId, priceId, planId, isAnnual, successUrl, cancelUrl } = data;
+  const uid = context.auth.uid;
+
+  // Vérifier que l'utilisateur correspond
+  if (userId && userId !== uid) {
+    throw new functions.https.HttpsError('permission-denied', 'Utilisateur non autorisé');
+  }
+
+  try {
+    // Créer la session Checkout Stripe
+    const session = await stripeClient.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price: priceId,
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      success_url: successUrl || `${functions.config().app.url}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${functions.config().app.url}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`,
+      metadata: {
+        userId: uid,
+        planId: planId,
+        isAnnual: isAnnual,
+        type: 'subscription'
+      }
+    });
+
+    console.log(`✅ Session Checkout créée: ${session.id} pour ${uid} (plan: ${planId}, ${isAnnual ? 'annuel' : 'mensuel'})`);
+    
+    return { 
+      success: true, 
+      sessionId: session.id 
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur createStripeCheckoutSession:', error);
     throw new functions.https.HttpsError('internal', error.message);
   }
 });
@@ -300,15 +367,65 @@ exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
   }
 
   // =========================================================================
-  // GESTION DES PAIEMENTS UNIQUES VIA PAYMENT LINKS
-  // Pour les packs de tokens, on ne peut pas créditer ici (pas de userId)
-  // C'est le frontend qui gère via confirmPurchase
+  // GESTION DES PAIEMENTS (Payment Links et Checkout Sessions)
   // =========================================================================
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    // Avec les Payment Links, on n'a pas de userId dans les metadata
-    // Le crédit des tokens est géré par confirmPurchase appelée par le frontend
-    console.log(`ℹ️ Paiement reçu via Payment Link: ${session.id} (crédit géré par frontend)`);
+    const metadata = session.metadata || {};
+    
+    // Si c'est une subscription avec userId dans metadata
+    if (metadata.type === 'subscription' && metadata.userId) {
+      const uid = metadata.userId;
+      const planId = metadata.planId;
+      const isAnnual = metadata.isAnnual === 'true' || metadata.isAnnual === true;
+      const plan = PLANS[planId];
+      
+      if (!plan) {
+        console.error(`❌ Webhook: Plan invalide ${planId} pour ${uid}`);
+        return;
+      }
+      
+      // Trouver l'utilisateur
+      const userDoc = await admin.firestore().collection('users').doc(uid).get();
+      if (!userDoc.exists) {
+        console.error(`❌ Webhook: Utilisateur ${uid} non trouvé`);
+        return;
+      }
+      
+      // Mettre à jour l'utilisateur avec l'abonnement
+      await userDoc.ref.update({
+        plan: planId,
+        isPremium: plan.isPremium,
+        features: plan.features,
+        allowedAnalyses: plan.allowedAnalyses,
+        maxProjects: plan.maxProjects,
+        storageLimit: plan.storageLimit,
+        tokenPerDay: plan.tokenPerDay,
+        hasUnlimitedAnalyses: plan.hasUnlimitedAnalyses,
+        hasAdvancedAnalyses: plan.hasAdvancedAnalyses,
+        canExportPDF: plan.canExportPDF,
+        hasAPIAccess: plan.hasAPIAccess || false,
+        subscriptionType: isAnnual ? 'annual' : 'monthly',
+        subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
+        subscriptionEndDate: isAnnual ? getAnnualEndDate() : getMonthlyEndDate(),
+        stripeCustomerId: session.customer,
+        tokenState: {
+          availableTokens: plan.tokens,
+          totalTokens: plan.tokens,
+          baseTokens: plan.tokens,
+          usedTokens: 0,
+          lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
+        }
+      });
+      
+      // Nettoyer les données en attente si elles existent
+      await admin.firestore().collection('pending_purchases').doc(uid).delete();
+      
+      console.log(`✅ Webhook: Abonnement activé pour ${uid} → Plan ${planId} (${isAnnual ? 'annuel' : 'mensuel'}) via session ${session.id}`);
+    } else {
+      // Pour les Payment Links (sans userId), le crédit est géré par confirmPurchase appelée par le frontend
+      console.log(`ℹ️ Paiement reçu via Payment Link: ${session.id} (crédit géré par frontend)`);
+    }
   }
 
   res.json({received: true});
