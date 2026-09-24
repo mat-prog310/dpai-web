@@ -31,7 +31,7 @@ const STRIPE_PRICE_IDS = {
 };
 
 // =============================================================================
-// CONFIGURATION DES PAYMENT LINKS (pour les packs de tokens)
+// CONFIGURATION DES PAYMENT LINKS (pour les packs de tokens ET abonnements)
 // MODIFIÉ : Payment Links LIVE - Mode PRODUCTION
 // Créés via: https://dashboard.stripe.com/payment-links
 // =============================================================================
@@ -40,7 +40,13 @@ const PAYMENT_LINKS = {
   discovery_link: "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",
   boost_link: "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",
   expert_link: "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",
-  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203"
+  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203",
+  
+  // Abonnements (méthode Payment Links - compatible avec l'ancien système)
+  pro_monthly_link: "https://buy.stripe.com/dRm14o2zidgT0Kb1JrcV204",
+  pro_annual_link: "https://buy.stripe.com/28EdRa0ra3Gj64v5ZHcV205",
+  enterprise_monthly_link: "https://buy.stripe.com/00wcN67TC0u778z5ZHcV206",
+  enterprise_annual_link: "https://buy.stripe.com/dRm00k8XG0u7csTbk1cV207"
 };
 
 class StripeService {
@@ -128,7 +134,7 @@ class StripeService {
   }
 
   // ===========================================================================
-  // ACHAT D'UN ABONNEMENT (via Stripe Checkout avec Price IDs)
+  // ACHAT D'UN ABONNEMENT (méthode hybride : Price IDs OU Payment Links)
   // ===========================================================================
   async purchaseSubscription(planId, userId, isAnnual = false) {
     try {
@@ -179,43 +185,64 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // Récupérer le Price ID correspondant
+      // ================================================================
+      // MÉTHODE HYBRIDE : Price IDs (prioritaire) OU Payment Links (fallback)
+      // ================================================================
       const priceId = STRIPE_PRICE_IDS[planId]?.[isAnnual ? 'annual' : 'monthly'];
-      if (!priceId) {
-        throw new Error(`Price ID non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
-      }
-
-      // Stocker l'intention d'abonnement dans Firestore
-      await db.collection('pending_purchases').doc(user.uid).set({
-        userId: user.uid,
-        planId: planId,
-        priceId: priceId,
-        isAnnual: isAnnual,
-        type: 'subscription',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        status: 'pending'
-      });
-
-      // Créer une session Checkout via Cloud Function
-      const functions = firebase.functions();
-      const createSession = functions.httpsCallable('createStripeCheckoutSession');
+      const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
+      const paymentUrl = PAYMENT_LINKS[linkKey];
       
-      const result = await createSession({
-        userId: user.uid,
-        priceId: priceId,
-        planId: planId,
-        isAnnual: isAnnual,
-        successUrl: `${window.location.origin}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`
-      });
+      if (priceId) {
+        // ===== NOUVELLE MÉTHODE : Checkout Sessions avec Price IDs =====
+        // Stocker l'intention d'abonnement dans Firestore
+        await db.collection('pending_purchases').doc(user.uid).set({
+          userId: user.uid,
+          planId: planId,
+          priceId: priceId,
+          isAnnual: isAnnual,
+          type: 'subscription',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'pending'
+        });
 
-      if (result.data.success && result.data.sessionId) {
-        // Rediriger vers Stripe Checkout
-        const stripe = Stripe(window.stripePublishableKey || 'pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc');
-        await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
+        // Créer une session Checkout via Cloud Function
+        const functions = firebase.functions();
+        const createSession = functions.httpsCallable('createStripeCheckoutSession');
+        
+        const result = await createSession({
+          userId: user.uid,
+          priceId: priceId,
+          planId: planId,
+          isAnnual: isAnnual,
+          successUrl: `${window.location.origin}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`
+        });
+
+        if (result.data.success && result.data.sessionId) {
+          // Rediriger vers Stripe Checkout
+          const stripe = Stripe(window.stripePublishableKey || 'pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc');
+          await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
+          return { success: true, redirected: true };
+        } else {
+          throw new Error(result.data.error || 'Impossible de créer la session de paiement');
+        }
+      } else if (paymentUrl) {
+        // ===== ANCIENNE MÉTHODE : Payment Links (fallback) =====
+        // Stocker l'intention d'abonnement dans Firestore
+        await db.collection('pending_purchases').doc(user.uid).set({
+          userId: user.uid,
+          planId: planId,
+          isAnnual: isAnnual,
+          type: 'subscription',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'pending'
+        });
+
+        // Rediriger vers le Payment Link Stripe
+        window.location.href = paymentUrl;
         return { success: true, redirected: true };
       } else {
-        throw new Error(result.data.error || 'Impossible de créer la session de paiement');
+        throw new Error(`Aucune méthode de paiement disponible pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
       }
 
     } catch (error) {
