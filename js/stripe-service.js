@@ -16,7 +16,22 @@ const SubscriptionPlans = {
 };
 
 // =============================================================================
-// CONFIGURATION DES PAYMENT LINKS (intégrée directement)
+// CONFIGURATION DES PRICE IDs STRIPE
+// =============================================================================
+const STRIPE_PRICE_IDS = {
+  // Abonnements avec tarifs mensuels et annuels
+  pro: {
+    monthly: 'price_1UHRbdKEd7fefQpsBl8qSJgF',
+    annual: 'price_1UHRbeKEd7fefQpsDwenwZFc'
+  },
+  enterprise: {
+    monthly: 'price_1UHRbfKEd7fefQpsTIdk1WEV',
+    annual: 'price_1UHRbfKEd7fefQpsGOWXqN6F'
+  }
+};
+
+// =============================================================================
+// CONFIGURATION DES PAYMENT LINKS (pour les packs de tokens)
 // MODIFIÉ : Payment Links LIVE - Mode PRODUCTION
 // Créés via: https://dashboard.stripe.com/payment-links
 // =============================================================================
@@ -25,13 +40,7 @@ const PAYMENT_LINKS = {
   discovery_link: "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",
   boost_link: "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",
   expert_link: "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",
-  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203",
-  
-  // Abonnements
-  pro_monthly_link: "https://buy.stripe.com/dRm14o2zidgT0Kb1JrcV204",
-  pro_annual_link: "https://buy.stripe.com/28EdRa0ra3Gj64v5ZHcV205",
-  enterprise_monthly_link: "https://buy.stripe.com/00wcN67TC0u778z5ZHcV206",
-  enterprise_annual_link: "https://buy.stripe.com/dRm00k8XG0u7csTbk1cV207"
+  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203"
 };
 
 class StripeService {
@@ -119,7 +128,7 @@ class StripeService {
   }
 
   // ===========================================================================
-  // ACHAT D'UN ABONNEMENT (via Payment Link)
+  // ACHAT D'UN ABONNEMENT (via Stripe Checkout avec Price IDs)
   // ===========================================================================
   async purchaseSubscription(planId, userId, isAnnual = false) {
     try {
@@ -170,30 +179,44 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // Vérification redondante supprimée - planId déjà validé via planPrices ci-dessus
-
-      // Récupérer l'URL du Payment Link
-      const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
-      const paymentUrl = PAYMENT_LINKS[linkKey];
-      
-      if (!paymentUrl) {
-        throw new Error(`Payment Link non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
+      // Récupérer le Price ID correspondant
+      const priceId = STRIPE_PRICE_IDS[planId]?.[isAnnual ? 'annual' : 'monthly'];
+      if (!priceId) {
+        throw new Error(`Price ID non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
       }
 
       // Stocker l'intention d'abonnement dans Firestore
       await db.collection('pending_purchases').doc(user.uid).set({
         userId: user.uid,
         planId: planId,
+        priceId: priceId,
         isAnnual: isAnnual,
         type: 'subscription',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'pending'
       });
 
-      // Rediriger vers le Payment Link Stripe
-      window.location.href = paymentUrl;
+      // Créer une session Checkout via Cloud Function
+      const functions = firebase.functions();
+      const createSession = functions.httpsCallable('createStripeCheckoutSession');
       
-      return { success: true, redirected: true };
+      const result = await createSession({
+        userId: user.uid,
+        priceId: priceId,
+        planId: planId,
+        isAnnual: isAnnual,
+        successUrl: `${window.location.origin}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`
+      });
+
+      if (result.data.success && result.data.sessionId) {
+        // Rediriger vers Stripe Checkout
+        const stripe = Stripe(window.stripePublishableKey || 'pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc');
+        await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
+        return { success: true, redirected: true };
+      } else {
+        throw new Error(result.data.error || 'Impossible de créer la session de paiement');
+      }
 
     } catch (error) {
       console.error('Erreur achat abonnement:', error);
