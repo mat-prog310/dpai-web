@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
     
     <!-- Stripe -->
     <script src="https://js.stripe.com/v3/"></script>
@@ -369,7 +370,7 @@
                         <li><i class="fas fa-check"></i> 2 analyses de base</li>
                         <li><i class="fas fa-check"></i> 1 rapport simplifié</li>
                     </ul>
-                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="discovery">
+                    <button class="btn btn-outline btn-block buy-pack-btn" data-pack="discovery">
                         <i class="fas fa-shopping-cart"></i> Acheter ce pack
                     </button>
                 </div>
@@ -396,7 +397,7 @@
                         <li><i class="fas fa-check"></i> 3 analyses avancées</li>
                         <li><i class="fas fa-check"></i> 1 analyse concurrentielle</li>
                     </ul>
-                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="boost">
+                    <button class="btn btn-outline btn-block buy-pack-btn" data-pack="boost">
                         <i class="fas fa-shopping-cart"></i> Acheter ce pack
                     </button>
                 </div>
@@ -424,7 +425,7 @@
                         <li><i class="fas fa-check"></i> 6 analyses avancées</li>
                         <li><i class="fas fa-check"></i> 2 analyses concurrentielles</li>
                     </ul>
-                    <button class="btn btn-primary btn-block" id="buyPackBtn" data-pack="expert">
+                    <button class="btn btn-primary btn-block buy-pack-btn" data-pack="expert">
                         <i class="fas fa-shopping-cart"></i> Acheter ce pack
                     </button>
                 </div>
@@ -451,7 +452,7 @@
                         <li><i class="fas fa-check"></i> Avec recommandations</li>
                         <li><i class="fas fa-check"></i> Plan d'action inclus</li>
                     </ul>
-                    <button class="btn btn-outline btn-block" id="buyPackBtn" data-pack="unique_report">
+                    <button class="btn btn-outline btn-block buy-pack-btn" data-pack="unique_report">
                         <i class="fas fa-shopping-cart"></i> Acheter ce pack
                     </button>
                 </div>
@@ -563,7 +564,7 @@
                         <i class="fas fa-plus"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Oui, nos packs de tokens sont disponibles sans abonnement. Vous pouvez acheter des tokens à la carte pour des analyses ponctuelles. Les tokens achetés ne jamais n'expirent pas.</p>
+                        <p>Oui, nos packs de tokens sont disponibles sans abonnement. Vous pouvez acheter des tokens à la carte pour des analyses ponctuelles. Les tokens achetés n'expirent jamais.</p>
                     </div>
                 </div>
                 
@@ -687,9 +688,10 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts (⚠️ ORDRE IMPORTANT) -->
     <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/payment-links-config.js"></script>   <!-- ✅ AJOUTÉ : URLs Stripe -->
     <script src="js/tokens.js"></script>
     <script src="js/stripe-service.js"></script>
     <script src="js/main.js"></script>
