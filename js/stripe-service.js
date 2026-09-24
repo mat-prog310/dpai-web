@@ -15,6 +15,9 @@ const SubscriptionPlans = {
   ENTERPRISE: 'enterprise'
 };
 
+// Exposer globalement pour les autres fichiers
+window.SubscriptionPlans = SubscriptionPlans;
+
 // =============================================================================
 // CONFIGURATION DES PRICE IDs STRIPE
 // =============================================================================
