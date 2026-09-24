@@ -38,10 +38,24 @@ function getPaymentLink(key) {
   return links[key + '_link'] || links[key] || null;
 }
 
+/**
+ * Construit l'URL finale avec client_reference_id + prefilled_email
+ * pour que le webhook puisse identifier l'utilisateur
+ */
 function buildPaymentUrl(baseUrl, data) {
+  const params = [];
+
+  // client_reference_id = JSON encodé (userId + planId + type)
   const ref = encodeURIComponent(JSON.stringify(data));
+  params.push('client_reference_id=' + ref);
+
+  // prefilled_email (optionnel, aide l'utilisateur)
+  if (data.email) {
+    params.push('prefilled_email=' + encodeURIComponent(data.email));
+  }
+
   const separator = baseUrl.includes('?') ? '&' : '?';
-  return baseUrl + separator + 'client_reference_id=' + ref;
+  return baseUrl + separator + params.join('&');
 }
 
 // =============================================================================
@@ -108,11 +122,14 @@ class StripeService {
         status: 'pending'
       });
 
+      // ✅ Ajout du client_reference_id + prefilled_email
       const finalUrl = buildPaymentUrl(paymentUrl, {
         userId: user.uid,
         planId: packId,
-        type: 'token_pack'
+        type: 'token_pack',
+        email: user.email || ''
       });
+      console.log('🔗 Redirection Stripe:', finalUrl);
       window.location.href = finalUrl;
       return { success: true, redirected: true };
 
@@ -187,12 +204,15 @@ class StripeService {
         status: 'pending'
       });
 
+      // ✅ Ajout du client_reference_id + prefilled_email
       const finalUrl = buildPaymentUrl(paymentUrl, {
         userId: user.uid,
         planId: planId,
         isAnnual: isAnnual,
-        type: 'subscription'
+        type: 'subscription',
+        email: user.email || ''
       });
+      console.log('🔗 Redirection Stripe:', finalUrl);
       window.location.href = finalUrl;
       return { success: true, redirected: true };
 
