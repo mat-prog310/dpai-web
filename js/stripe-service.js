@@ -7,6 +7,15 @@
 // db et authService sont définis globalement dans firebase-config.js
 
 // =============================================================================
+// CONSTANTES DES PLANS (pour éviter les dépendances externes)
+// =============================================================================
+const SubscriptionPlans = {
+  FREE: 'free',
+  PRO: 'pro',
+  ENTERPRISE: 'enterprise'
+};
+
+// =============================================================================
 // CONFIGURATION DES PAYMENT LINKS (intégrée directement)
 // MODIFIÉ : Payment Links LIVE - Mode PRODUCTION
 // Créés via: https://dashboard.stripe.com/payment-links
@@ -162,7 +171,6 @@ class StripeService {
       }
 
       // Vérification redondante supprimée - planId déjà validé via planPrices ci-dessus
-      // (SubscriptionPlans n'est pas défini dans ce fichier, mais la vérification des prix suffit)
 
       // Récupérer l'URL du Payment Link
       const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
