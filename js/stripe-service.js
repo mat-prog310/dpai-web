@@ -7,16 +7,14 @@
 // db et authService sont définis globalement dans firebase-config.js
 
 // =============================================================================
-// CONSTANTES DES PLANS (pour éviter les dépendances externes)
+// CONSTANTES DES PLANS - DÉFINIES EN PREMIER POUR ÉVITER LES ERREURS DE CHARGEMENT
 // =============================================================================
-const SubscriptionPlans = {
+// Définir sur window ET dans le scope global (var) pour être accessible partout
+var SubscriptionPlans = window.SubscriptionPlans = {
   FREE: 'free',
   PRO: 'pro',
   ENTERPRISE: 'enterprise'
 };
-
-// Exposer globalement pour les autres fichiers
-window.SubscriptionPlans = SubscriptionPlans;
 
 // =============================================================================
 // CONFIGURATION DES PRICE IDs STRIPE
@@ -77,8 +75,8 @@ class StripeService {
   // ===========================================================================
   async purchaseTokenPack(packId, userId) {
     try {
-      // Définition locale des packs de tokens (évite la dépendance externe)
-      const TokenPacks = [
+      // Utiliser la définition globale de TokenPacks (définie dans tokens.js)
+      const TokenPacks = window.TokenPacks || [
         { id: 'discovery', name: 'Découverte', tokenAmount: 100, priceEuros: 12.00 },
         { id: 'boost', name: 'Boost', tokenAmount: 300, priceEuros: 30.00 },
         { id: 'expert', name: 'Expert', tokenAmount: 600, priceEuros: 55.00 },
@@ -137,7 +135,7 @@ class StripeService {
   }
 
   // ===========================================================================
-  // ACHAT D'UN ABONNEMENT (méthode hybride : Price IDs OU Payment Links)
+  // ACHAT D'UN ABONNEMENT (via Payment Links uniquement - comme pour les packs)
   // ===========================================================================
   async purchaseSubscription(planId, userId, isAnnual = false) {
     try {
@@ -154,7 +152,7 @@ class StripeService {
 
       // Plan gratuit
       if (price === 0) {
-        // Créer le tokenState manuellement (sans dépendre de TokenManager qui n'existe pas dans le backend)
+        // Créer le tokenState manuellement
         const tokenLimits = { free: 50, pro: 500, enterprise: 5000 };
         const tokenBonuses = { free: 0.0, pro: 0.20, enterprise: 0.30 };
         const baseTokens = tokenLimits[planId] || tokenLimits.free;
@@ -188,65 +186,27 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // ================================================================
-      // MÉTHODE HYBRIDE : Price IDs (prioritaire) OU Payment Links (fallback)
-      // ================================================================
-      const priceId = STRIPE_PRICE_IDS[planId]?.[isAnnual ? 'annual' : 'monthly'];
+      // Utiliser UNIQUEMENT les Payment Links (comme pour les packs de tokens)
       const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
       const paymentUrl = PAYMENT_LINKS[linkKey];
       
-      if (priceId) {
-        // ===== NOUVELLE MÉTHODE : Checkout Sessions avec Price IDs =====
-        // Stocker l'intention d'abonnement dans Firestore
-        await db.collection('pending_purchases').doc(user.uid).set({
-          userId: user.uid,
-          planId: planId,
-          priceId: priceId,
-          isAnnual: isAnnual,
-          type: 'subscription',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          status: 'pending'
-        });
-
-        // Créer une session Checkout via Cloud Function
-        const functions = firebase.functions();
-        const createSession = functions.httpsCallable('createStripeCheckoutSession');
-        
-        const result = await createSession({
-          userId: user.uid,
-          priceId: priceId,
-          planId: planId,
-          isAnnual: isAnnual,
-          successUrl: `${window.location.origin}/pricing.html?success=true&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/pricing.html?canceled=true&session_id={CHECKOUT_SESSION_ID}`
-        });
-
-        if (result.data.success && result.data.sessionId) {
-          // Rediriger vers Stripe Checkout
-          const stripe = Stripe(window.stripePublishableKey || 'pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc');
-          await stripe.redirectToCheckout({ sessionId: result.data.sessionId });
-          return { success: true, redirected: true };
-        } else {
-          throw new Error(result.data.error || 'Impossible de créer la session de paiement');
-        }
-      } else if (paymentUrl) {
-        // ===== ANCIENNE MÉTHODE : Payment Links (fallback) =====
-        // Stocker l'intention d'abonnement dans Firestore
-        await db.collection('pending_purchases').doc(user.uid).set({
-          userId: user.uid,
-          planId: planId,
-          isAnnual: isAnnual,
-          type: 'subscription',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          status: 'pending'
-        });
-
-        // Rediriger vers le Payment Link Stripe
-        window.location.href = paymentUrl;
-        return { success: true, redirected: true };
-      } else {
-        throw new Error(`Aucune méthode de paiement disponible pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
+      if (!paymentUrl) {
+        throw new Error(`Payment Link non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
       }
+
+      // Stocker l'intention d'abonnement dans Firestore
+      await db.collection('pending_purchases').doc(user.uid).set({
+        userId: user.uid,
+        planId: planId,
+        isAnnual: isAnnual,
+        type: 'subscription',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'pending'
+      });
+
+      // Rediriger vers le Payment Link Stripe
+      window.location.href = paymentUrl;
+      return { success: true, redirected: true };
 
     } catch (error) {
       console.error('Erreur achat abonnement:', error);

@@ -54,8 +54,8 @@ const AnalysisCosts = {
   benchmark: { free: 20, pro: 10, enterprise: 5 }
 };
 
-// Packs de tokens disponibles
-const TokenPacks = [
+// Packs de tokens disponibles - Définis globalement pour éviter les erreurs de chargement
+var TokenPacks = window.TokenPacks = [
   {
     id: 'discovery',
     name: 'Découverte',

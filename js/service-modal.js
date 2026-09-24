@@ -3,16 +3,16 @@
 // =============================================================================
 
 // Utiliser la constante SubscriptionPlans définie dans stripe-service.js
-// Si elle n'existe pas encore, la définir ici pour éviter les erreurs
+// Si elle n'existe pas encore, la définir globalement ici pour éviter les erreurs
 if (typeof window.SubscriptionPlans === 'undefined') {
-    window.SubscriptionPlans = {
+    var SubscriptionPlans = window.SubscriptionPlans = {
         FREE: 'free',
         PRO: 'pro',
         ENTERPRISE: 'enterprise'
     };
+} else {
+    var SubscriptionPlans = window.SubscriptionPlans;
 }
-
-const SubscriptionPlans = window.SubscriptionPlans;
 
 // Hiérarchie des plans (index plus élevé = meilleur plan)
 const PlanHierarchy = {
