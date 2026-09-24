@@ -3,68 +3,49 @@ var SubscriptionPlans = window.SubscriptionPlans = { FREE: 'free', PRO: 'pro', E
 
 // =============================================================================
 // STRIPE-SERVICE.JS - Service de paiement via Payment Links
-// Solution ULTRA-SIMPLE : les URLs sont intégrées directement dans ce fichier
+// Solution SIMPLE : utilise des Payment Links Stripe (pas besoin de backend)
 // =============================================================================
 
-// Références Firebase (exposées par firebase-config.js)
-// db et authService sont définis globalement dans firebase-config.js
-
 // =============================================================================
-// CONSTANTES DES PLANS - DÉJÀ DÉFINIES PLUS HAUT
+// CONFIGURATION DES PAYMENT LINKS STRIPE
 // =============================================================================
-// SubscriptionPlans est déjà défini en première ligne pour éviter les erreurs
-
-// =============================================================================
-// CONFIGURATION DES PRICE IDs STRIPE
-// =============================================================================
-const STRIPE_PRICE_IDS = {
-  // Abonnements avec tarifs mensuels et annuels
-  pro: {
-    monthly: 'price_1UHRbdKEd7fefQpsBl8qSJgF',
-    annual: 'price_1UHRbeKEd7fefQpsDwenwZFc'
-  },
-  enterprise: {
-    monthly: 'price_1UHRbfKEd7fefQpsTIdk1WEV',
-    annual: 'price_1UHRbfKEd7fefQpsGOWXqN6F'
-  }
-};
-
-// =============================================================================
-// CONFIGURATION DES PAYMENT LINKS (pour les packs de tokens ET abonnements)
-// MODIFIÉ : Payment Links LIVE - Mode PRODUCTION
-// Créés via: https://dashboard.stripe.com/payment-links
+// 1. Va sur https://dashboard.stripe.com/test/payment-links (TEST)
+//    ou https://dashboard.stripe.com/payment-links (PRODUCTION)
+// 2. Cree un Payment Link pour chaque produit
+// 3. Copie les URLs ici
 // =============================================================================
 const PAYMENT_LINKS = {
   // Packs de tokens
-  discovery_link: "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",
-  boost_link: "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",
-  expert_link: "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",
-  unique_report_link: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203",
+  discovery: "https://buy.stripe.com/cNi00k2zia4H8cD0FncV200",       // A REMPLIR : URL Payment Link pour 100 tokens - 12€
+  boost: "https://buy.stripe.com/9B63cw5Lua4HdwX2NvcV201",           // A REMPLIR : URL Payment Link pour 300 tokens - 30€
+  expert: "https://buy.stripe.com/eVq4gA4Hq1yb78zafXcV202",          // A REMPLIR : URL Payment Link pour 600 tokens - 55€
+  unique_report: "https://buy.stripe.com/3cIaEYgq86Sv8cD9bTcV203",  // A REMPLIR : URL Payment Link pour 250 tokens - 25€
   
-  // Abonnements (méthode Payment Links - compatible avec l'ancien système)
-  pro_monthly_link: "https://buy.stripe.com/dRm14o2zidgT0Kb1JrcV204",
-  pro_annual_link: "https://buy.stripe.com/28EdRa0ra3Gj64v5ZHcV205",
-  enterprise_monthly_link: "https://buy.stripe.com/00wcN67TC0u778z5ZHcV206",
-  enterprise_annual_link: "https://buy.stripe.com/dRm00k8XG0u7csTbk1cV207"
+  // Abonnements
+  pro_monthly: "https://buy.stripe.com/dRm14o2zidgT0Kb1JrcV204",       // A REMPLIR : URL Payment Link Pro mensuel - 50€/mois
+  pro_annual: "https://buy.stripe.com/28EdRa0ra3Gj64v5ZHcV205",        // A REMPLIR : URL Payment Link Pro annuel - 500€/an
+  enterprise_monthly: "https://buy.stripe.com/00wcN67TC0u778z5ZHcV206", // A REMPLIR : URL Payment Link Enterprise mensuel - 300€/mois
+  enterprise_annual: "https://buy.stripe.com/dRm00k8XG0u7csTbk1cV207"  // A REMPLIR : URL Payment Link Enterprise annuel - 3000€/an
 };
 
 class StripeService {
   constructor() {
-    // Utilisation des Payment Links Stripe - fonctionne parfaitement sur mobile
-    console.log('%c💳 [Stripe] Mode PRODUCTION: Utilise des Payment Links LIVE', 'color: #28a745; font-weight: bold;');
-    console.log('%c💳 [Stripe] Paiements réels activés - Cartes de test seront refusées', 'color: #28a745;');
+    console.log('%c💳 [Stripe] Utilise Payment Links - Pas besoin de backend', 'color: #6772e5; font-weight: bold;');
   }
 
-  // Initialisation simplifiée
+  // Initialisation
   async init(publishableKey) {
-    // Vérification du mode
-    if (publishableKey && publishableKey.startsWith('pk_test_')) {
-      console.warn('%c⚠️ [Stripe] ATTENTION: Clé TEST détectée! Passez en LIVE pour les paiements réels!', 'color: #dc3545; font-weight: bold;');
-    } else if (publishableKey && publishableKey.startsWith('pk_live_')) {
-      console.log('%c✅ [Stripe] Clé PRODUCTION détectée - Paiements réels activés', 'color: #28a745;');
-    } else {
+    if (!publishableKey) {
       console.warn('%c⚠️ [Stripe] Aucune clé publique Stripe détectée', 'color: #ffc107;');
+      return false;
     }
+
+    if (publishableKey.startsWith('pk_test_')) {
+      console.log('%c🧪 [Stripe] Mode TEST - Cartes de test autorisées', 'color: #28a745; font-weight: bold;');
+    } else if (publishableKey.startsWith('pk_live_')) {
+      console.log('%c✅ [Stripe] Mode PRODUCTION - Paiements réels', 'color: #28a745;');
+    }
+
     return true;
   }
 
@@ -73,7 +54,6 @@ class StripeService {
   // ===========================================================================
   async purchaseTokenPack(packId, userId) {
     try {
-      // Utiliser la définition globale de TokenPacks (définie dans tokens.js)
       const TokenPacks = window.TokenPacks || [
         { id: 'discovery', name: 'Découverte', tokenAmount: 100, priceEuros: 12.00 },
         { id: 'boost', name: 'Boost', tokenAmount: 300, priceEuros: 30.00 },
@@ -93,7 +73,9 @@ class StripeService {
           'tokenState.availableTokens': FieldValue.increment(pack.tokenAmount),
           'tokenState.totalTokens': FieldValue.increment(pack.tokenAmount)
         });
-        await loadUserTokenData(userId);
+        if (typeof loadUserTokenData === 'function') {
+          await loadUserTokenData(userId);
+        }
         return { success: true, isFree: true };
       }
 
@@ -103,12 +85,11 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // Récupérer l'URL du Payment Link pour ce pack
-      const linkKey = `${packId}_link`;
-      const paymentUrl = PAYMENT_LINKS[linkKey];
+      // Récupérer l'URL du Payment Link
+      const paymentUrl = PAYMENT_LINKS[packId];
       
       if (!paymentUrl) {
-        throw new Error(`Payment Link non trouvé pour le pack ${packId}`);
+        throw new Error(`Payment Link non configuré pour ${packId}. Configure PAYMENT_LINKS dans stripe-service.js`);
       }
 
       // Stocker l'intention d'achat dans Firestore
@@ -121,9 +102,8 @@ class StripeService {
         status: 'pending'
       });
 
-      // Rediriger vers le Payment Link Stripe
+      // Rediriger vers Stripe
       window.location.href = paymentUrl;
-      
       return { success: true, redirected: true };
 
     } catch (error) {
@@ -133,7 +113,7 @@ class StripeService {
   }
 
   // ===========================================================================
-  // ACHAT D'UN ABONNEMENT (via Payment Links uniquement - comme pour les packs)
+  // ACHAT D'UN ABONNEMENT (via Payment Link)
   // ===========================================================================
   async purchaseSubscription(planId, userId, isAnnual = false) {
     try {
@@ -150,7 +130,6 @@ class StripeService {
 
       // Plan gratuit
       if (price === 0) {
-        // Créer le tokenState manuellement
         const tokenLimits = { free: 50, pro: 500, enterprise: 5000 };
         const tokenBonuses = { free: 0.0, pro: 0.20, enterprise: 0.30 };
         const baseTokens = tokenLimits[planId] || tokenLimits.free;
@@ -184,12 +163,12 @@ class StripeService {
         throw new Error('Utilisateur non connecté');
       }
 
-      // Utiliser UNIQUEMENT les Payment Links (comme pour les packs de tokens)
-      const linkKey = `${planId}_${isAnnual ? 'annual' : 'monthly'}_link`;
+      // Récupérer l'URL du Payment Link
+      const linkKey = isAnnual ? `${planId}_annual` : `${planId}_monthly`;
       const paymentUrl = PAYMENT_LINKS[linkKey];
       
       if (!paymentUrl) {
-        throw new Error(`Payment Link non trouvé pour ${planId} ${isAnnual ? 'annuel' : 'mensuel'}`);
+        throw new Error(`Payment Link non configuré pour ${linkKey}. Configure PAYMENT_LINKS dans stripe-service.js`);
       }
 
       // Stocker l'intention d'abonnement dans Firestore
@@ -202,7 +181,7 @@ class StripeService {
         status: 'pending'
       });
 
-      // Rediriger vers le Payment Link Stripe
+      // Rediriger vers Stripe
       window.location.href = paymentUrl;
       return { success: true, redirected: true };
 
@@ -213,7 +192,7 @@ class StripeService {
   }
 
   // ===========================================================================
-  // FONCTIONS UTILITAIRES (conservées pour compatibilité)
+  // FONCTIONS UTILITAIRES
   // ===========================================================================
   
   handleCardError(error) {
