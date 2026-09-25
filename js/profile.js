@@ -9,9 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialiser la page de profil
 function initProfilePage() {
-    // Vérifier l'état d'authentification
-    checkProfileAuthStatus();
-    
     // Initialiser les tabs
     initProfileTabs();
     
@@ -26,31 +23,75 @@ function initProfilePage() {
         const { user, userData } = event.detail;
         checkProfileAuthStatus(user, userData);
     });
+    
+    // Vérifier l'état d'authentification
+    checkProfileAuthStatus();
+    
+    // Vérifier périodiquement au cas où authService n'est pas encore prêt
+    const checkAuthInterval = setInterval(function() {
+        // Si authService existe, vérifier une dernière fois et arrêter l'intervalle
+        if (typeof authService !== 'undefined' && authService !== null) {
+            checkProfileAuthStatus();
+            clearInterval(checkAuthInterval);
+        }
+    }, 500);
+    
+    // Arrêter l'intervalle après 10 secondes maximum
+    setTimeout(function() {
+        clearInterval(checkAuthInterval);
+    }, 10000);
 }
 
 // Vérifier l'état d'authentification
 function checkProfileAuthStatus(user, userData) {
-    const userFinal = user || authService.currentUser;
-    const userDataFinal = userData || authService.userData;
+    // Vérifier si authService existe
+    const authServiceExists = typeof authService !== 'undefined' && authService !== null;
+    
+    const userFinal = user || (authServiceExists ? authService.currentUser : null);
+    const userDataFinal = userData || (authServiceExists ? authService.userData : null);
     
     const unauthenticatedView = document.getElementById('unauthenticatedProfileView');
     const profileContent = document.getElementById('profileContent');
+    const loadingView = document.getElementById('loadingView');
     
-    if (userFinal && userDataFinal) {
+    // Cacher toutes les vues d'abord
+    if (unauthenticatedView) unauthenticatedView.style.display = 'none';
+    if (profileContent) profileContent.style.display = 'none';
+    if (loadingView) loadingView.style.display = 'none';
+    
+    // Si authService n'existe pas encore, afficher le loading
+    if (!authServiceExists) {
+        if (loadingView) loadingView.style.display = 'block';
+        return;
+    }
+    
+    // Si authService existe mais user est null, on est peut-être en train de charger
+    // Afficher le loading si on est en attente de vérification
+    if (!userFinal && authServiceExists) {
+        // Vérifier si on est dans un état de chargement
+        // Si authService existe mais currentUser est null, Firebase est peut-être en train de vérifier
+        if (loadingView) loadingView.style.display = 'block';
+        else if (unauthenticatedView) unauthenticatedView.style.display = 'block';
+        return;
+    }
+    
+    // Si l'utilisateur est connecté, afficher le contenu
+    if (userFinal) {
         // Utilisateur connecté
-        if (unauthenticatedView) unauthenticatedView.style.display = 'none';
         if (profileContent) profileContent.style.display = 'block';
         
-        // Charger les données du profil
-        loadProfileData(userFinal, userDataFinal);
-        
-        // Initialiser TokenManager
-        TokenManager.init(userDataFinal);
+        // Si on a userData, charger les données
+        if (userDataFinal) {
+            // Charger les données du profil
+            loadProfileData(userFinal, userDataFinal);
+            
+            // Initialiser TokenManager
+            TokenManager.init(userDataFinal);
+        }
         
     } else {
         // Utilisateur non connecté
         if (unauthenticatedView) unauthenticatedView.style.display = 'block';
-        if (profileContent) profileContent.style.display = 'none';
     }
 }
 
@@ -64,6 +105,9 @@ function loadProfileData(user, userData) {
     
     // Charger les préférences
     loadPreferences(userData);
+    
+    // Mettre à jour l'UI du plan
+    updatePlanUI(userData);
 }
 
 // Mettre à jour l'en-tête du profil
@@ -346,6 +390,18 @@ function initProfileModals() {
         if (closeBtn) closeBtn.onclick = function() { accountDeleteModal.classList.remove('visible'); };
         if (cancelBtn) cancelBtn.onclick = function() { accountDeleteModal.classList.remove('visible'); };
         if (confirmBtn) confirmBtn.onclick = confirmAccountDeletion;
+    }
+    
+    // Modal de rétrogradation
+    const downgradeModal = document.getElementById('downgradeModal');
+    if (downgradeModal) {
+        const closeBtn = document.getElementById('downgradeModalClose');
+        const cancelBtn = document.getElementById('downgradeCancel');
+        const confirmBtn = document.getElementById('downgradeConfirm');
+        
+        if (closeBtn) closeBtn.onclick = hideDowngradeModal;
+        if (cancelBtn) cancelBtn.onclick = hideDowngradeModal;
+        if (confirmBtn) confirmBtn.onclick = downgradePlan;
     }
 }
 
@@ -814,9 +870,276 @@ function showAlert(type, title, message) {
     }
 }
 
+// Rétrogradation de plan
+function showDowngradeModal() {
+    const modal = document.getElementById('downgradeModal');
+    if (modal) {
+        modal.classList.add('visible');
+        
+        // Mettre à jour la liste des pertes selon le plan actuel
+        updateDowngradeLosesList();
+    }
+}
+
+function hideDowngradeModal() {
+    const modal = document.getElementById('downgradeModal');
+    if (modal) {
+        modal.classList.remove('visible');
+        document.getElementById('downgradePassword').value = '';
+    }
+}
+
+function updateDowngradeLosesList() {
+    const userPlan = authService?.userData?.plan;
+    const losesList = document.getElementById('downgradeLosesList');
+    
+    if (!losesList) return;
+    
+    const planFeatures = {
+        pro: [
+            'Accès aux analyses avancées',
+            '500 tokens/mois supplémentaires',
+            'Support prioritaire',
+            'Projets illimités'
+        ],
+        enterprise: [
+            'Accès à TOUTES les analyses',
+            '5000 tokens/mois supplémentaires',
+            'Support dédié 24/7',
+            'Accès API',
+            'Formation incluse',
+            'Rapports personnalisés',
+            'Services de stratégie de croissance externe'
+        ]
+    };
+    
+    const features = planFeatures[userPlan] || [];
+    losesList.innerHTML = features.map(feature => 
+        `<li><i class="fas fa-times-circle"></i> ${feature}</li>`
+    ).join('');
+}
+
+function downgradePlan() {
+    const password = document.getElementById('downgradePassword')?.value;
+    
+    if (!password) {
+        showAlert('error', 'Erreur', 'Veuillez entrer votre mot de passe');
+        return;
+    }
+    
+    const currentUser = authService?.currentUser;
+    const currentUserData = authService?.userData;
+    
+    if (!currentUser || !currentUserData) {
+        showAlert('error', 'Erreur', 'Impossible de rétrograder. Veuillez réessayer.');
+        return;
+    }
+    
+    // Vérifier que l'utilisateur n'est pas déjà en plan gratuit
+    if (currentUserData.plan === 'free') {
+        showAlert('error', 'Erreur', 'Vous êtes déjà sur le plan Gratuit.');
+        hideDowngradeModal();
+        return;
+    }
+    
+    // Re-authentifier l'utilisateur
+    const credential = firebase.auth.EmailAuthProvider.credential(
+        currentUser.email,
+        password
+    );
+    
+    // Afficher un état de chargement sur le bouton
+    const confirmBtn = document.getElementById('downgradeConfirm');
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rétrogradation en cours...';
+    }
+    
+    currentUser.reauthenticateWithCredential(credential)
+        .then(async () => {
+            try {
+                // Mettre à jour le plan en base de données
+                const userRef = authService.db.collection('users').doc(currentUser.uid);
+                
+                // Créer un nouvel état de tokens pour le plan gratuit
+                const newTokenState = TokenManager.createTokenState(currentUser.uid, 'free');
+                
+                await userRef.update({
+                    plan: 'free',
+                    subscriptionStartDate: new Date().toISOString(),
+                    subscriptionEndDate: null,
+                    tokenState: newTokenState,
+                    hasAccessToPremiumSuggestions: false,
+                    hasAccessToAdvancedAnalytics: false,
+                    hasAccessToAPI: false,
+                    hasCompanyDiscount: false
+                });
+                
+                // Recharger les données utilisateur
+                await authService.loadUserData(currentUser.uid);
+                
+                // Restaurer le bouton
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Confirmer la rétrogradation';
+                }
+                
+                hideDowngradeModal();
+                
+                showAlert('success', 'Succès', 'Votre plan a été rétrogradé avec succès. Vous avez maintenant le plan Gratuit.');
+                
+                // Déclencher un événement pour mettre à jour l'UI
+                window.dispatchEvent(new CustomEvent('authStateChanged', {
+                    detail: {
+                        user: currentUser,
+                        userData: authService.userData
+                    }
+                }));
+                
+                // Recharger la page pour appliquer les changements
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                // Restaurer le bouton
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Confirmer la rétrogradation';
+                }
+                
+                console.error('Erreur lors de la rétrogradation:', error);
+                showAlert('error', 'Erreur', 'Une erreur est survenue lors de la rétrogradation. Veuillez réessayer.');
+            }
+        })
+        .catch(error => {
+            // Restaurer le bouton
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Confirmer la rétrogradation';
+            }
+            
+            console.error('Erreur d\'authentification:', error);
+            showAlert('error', 'Erreur', 'Mot de passe incorrect. Veuillez réessayer.');
+        });
+}
+
+// Mettre à jour l'UI selon le plan
+function updatePlanUI(userData) {
+    const plan = userData?.plan || 'free';
+    const isFree = plan === 'free';
+    
+    // Boutons de rétrogradation
+    const downgradeBtn = document.getElementById('downgradeBtn');
+    const dangerDowngradeBtn = document.getElementById('dangerDowngradeBtn');
+    
+    if (downgradeBtn) {
+        downgradeBtn.style.display = isFree ? 'none' : 'inline-flex';
+    }
+    
+    if (dangerDowngradeBtn) {
+        dangerDowngradeBtn.style.display = isFree ? 'none' : 'inline-flex';
+    }
+    
+    // Avertissement de rétrogradation
+    const downgradeWarning = document.getElementById('downgradeWarning');
+    if (downgradeWarning) {
+        downgradeWarning.style.display = isFree ? 'none' : 'flex';
+    }
+    
+    // Mettre à jour le badge de plan dans le header
+    const planBadge = document.getElementById('profilePlanBadge');
+    const accountPlanEl = document.getElementById('accountPlan');
+    
+    const planNames = {
+        free: 'Gratuit',
+        pro: 'Pro',
+        enterprise: 'Entreprise'
+    };
+    
+    const planName = planNames[plan] || plan;
+    
+    if (planBadge) {
+        planBadge.innerHTML = `<i class="fas fa-crown"></i> <span>${planName}</span>`;
+    }
+    
+    if (accountPlanEl) {
+        accountPlanEl.textContent = planName;
+    }
+    
+    // Mettre à jour le nom du plan actuel
+    const currentPlanName = document.getElementById('currentPlanName');
+    if (currentPlanName) {
+        currentPlanName.textContent = planName;
+    }
+    
+    // Mettre à jour la description du plan
+    const currentPlanDescription = document.getElementById('currentPlanDescription');
+    const planDescriptions = {
+        free: 'Accès aux fonctionnalités de base avec 50 tokens gratuits.',
+        pro: 'Accès à toutes les analyses avec 500 tokens/mois + 1/jour.',
+        enterprise: 'Accès complet à toutes les fonctionnalités avec 5000 tokens/mois + 1/jour, support dédié et formation incluse.'
+    };
+    if (currentPlanDescription) {
+        currentPlanDescription.textContent = planDescriptions[plan] || '';
+    }
+    
+    // Mettre à jour les fonctionnalités affichées
+    const currentPlanFeatures = document.getElementById('currentPlanFeatures');
+    const planFeaturesMap = {
+        free: [
+            'Analyses de base',
+            '50 tokens gratuits',
+            'Accès limité',
+            '3 projets maximum'
+        ],
+        pro: [
+            'Toutes les analyses',
+            '500 tokens/mois + 1/jour',
+            'Rapports détaillés',
+            'Projets illimités',
+            'Support prioritaire'
+        ],
+        enterprise: [
+            'Toutes les analyses premium',
+            '5000 tokens/mois + 1/jour',
+            'Support dédié 24/7',
+            'Accès API',
+            'Formation incluse',
+            'Stratégie de croissance externe',
+            'Rapports personnalisés'
+        ]
+    };
+    
+    if (currentPlanFeatures) {
+        const features = planFeaturesMap[plan] || [];
+        currentPlanFeatures.innerHTML = features.map(feature => 
+            `<li><i class="fas fa-check"></i> ${feature}</li>`
+        ).join('');
+    }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            input.type = 'password';
+            button.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    }
+}
+
 // Rendre les fonctions disponibles globalement
 window.changeEmail = changeEmail;
 window.copyReferralCode = copyReferralCode;
 window.enableTwoFactor = enableTwoFactor;
 window.uploadAvatar = uploadAvatar;
 window.deleteAccount = deleteAccount;
+window.showDowngradeModal = showDowngradeModal;
+window.hideDowngradeModal = hideDowngradeModal;
+window.downgradePlan = downgradePlan;
+window.togglePasswordVisibility = togglePasswordVisibility;
