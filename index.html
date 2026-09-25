@@ -1,520 +1,263 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DPAI Strategy - L'intelligence stratégique pour votre croissance externe</title>
-    <meta name="description" content="DPAI Strategy offre des solutions d'analyse stratégique avancée pour la croissance externe. Abonnements flexibles, système de tokens, et outils puissants pour les professionnels du M&A.">
+// =============================================================================
+// Firebase Cloud Functions pour DPAI
+// Gestion des confirmations de paiement Stripe
+// =============================================================================
+
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+
+// Initialiser Firebase Admin SDK si ce n'est pas déjà fait
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
+
+const db = admin.firestore();
+
+// =============================================================================
+// CONFIGURATION STRIPE
+// =============================================================================
+const stripe = require('stripe')(functions.config().stripe.secret || process.env.STRIPE_SECRET_KEY);
+
+// =============================================================================
+// FONCTION: Confirmer un abonnement après paiement Stripe
+// =============================================================================
+exports.confirmStripeSubscription = functions.https.onCall(async (data, context) => {
+    // Vérifier l'authentification
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Non autorisé');
+    }
     
-    <!-- Stripe -->
-    <script src="https://js.stripe.com/v3/"></script>
+    const { userId, sessionId } = data;
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    try {
+        // 1. Récupérer la session Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        // Vérifier que le paiement a réussi
+        if (session.payment_status !== 'paid') {
+            console.log('Paiement non confirmé pour session:', sessionId);
+            return { success: false, error: 'Paiement non confirmé' };
+        }
+        
+        // 2. Récupérer les données de l'achat en attente
+        const pendingDoc = await db.collection('pending_purchases').doc(userId).get();
+        if (!pendingDoc.exists) {
+            console.log('Aucun achat en attente trouvé pour:', userId);
+            return { success: false, error: 'Aucun achat en attente trouvé' };
+        }
+        
+        const purchaseData = pendingDoc.data();
+        const planId = purchaseData.planId || 'pro';
+        const isAnnual = purchaseData.isAnnual || false;
+        
+        // 3. Configurer les tokens selon le plan
+        const planConfigs = {
+            pro: { baseTokens: 500, bonusRate: 0.20, monthlyTokenRate: 1 },
+            enterprise: { baseTokens: 5000, bonusRate: 0.30, monthlyTokenRate: 1 }
+        };
+        
+        const config = planConfigs[planId] || planConfigs.pro;
+        const baseTokens = config.baseTokens;
+        const bonusTokens = Math.floor(baseTokens * config.bonusRate);
+        const welcomeBonus = 10;
+        const totalTokens = baseTokens + bonusTokens + welcomeBonus;
+        
+        // 4. Mettre à jour l'utilisateur dans Firestore
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+            plan: planId,
+            subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
+            subscriptionEndDate: isAnnual 
+                ? admin.firestore.Timestamp.fromDate(
+                    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                ) 
+                : null,
+            // Débloquer les services selon le plan
+            hasAccessToPremiumSuggestions: true,
+            hasAccessToAdvancedAnalytics: planId === 'pro' || planId === 'enterprise',
+            hasAccessToAPI: planId === 'enterprise',
+            // Mettre à jour le tokenState
+            'tokenState.plan': planId,
+            'tokenState.baseTokens': baseTokens,
+            'tokenState.bonusTokens': bonusTokens,
+            'tokenState.totalTokens': totalTokens,
+            'tokenState.availableTokens': totalTokens,
+            'tokenState.usedTokens': 0,
+            'tokenState.monthlyTokensUsed': 0,
+            'tokenState.lastTokenUpdate': admin.firestore.FieldValue.serverTimestamp(),
+            'tokenState.lastMonthlyReset': admin.firestore.FieldValue.serverTimestamp(),
+            'tokenState.firstAnalysisDone': false
+        });
+        
+        // 5. Nettoyer l'achat en attente
+        await db.collection('pending_purchases').doc(userId).delete();
+        
+        console.log('Abonnement confirmé pour:', userId, 'Plan:', planId);
+        return { success: true, planId, tokenAmount: totalTokens };
+        
+    } catch (error) {
+        console.error('Erreur confirmation abonnement:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+// =============================================================================
+// FONCTION: Confirmer un achat de pack de tokens après paiement Stripe
+// =============================================================================
+exports.confirmTokenPurchase = functions.https.onCall(async (data, context) => {
+    // Vérifier l'authentification
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'Non autorisé');
+    }
     
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    const { userId, sessionId } = data;
     
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/responsive.css">
-</head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <a href="/" class="logo">
-                <i class="fas fa-chart-line"></i>
-                <span>DPAI</span>
-            </a>
-            
-            <ul class="nav-links" id="navLinks">
-                <li><a href="#features" class="nav-link">Fonctionnalités</a></li>
-                <li><a href="#services" class="nav-link">Services</a></li>
-                <li><a href="pricing.html" class="nav-link">Tarifs</a></li>
-                <li><a href="#how-it-works" class="nav-link">Comment ça marche</a></li>
-            </ul>
-            
-            <div class="nav-actions">
-                <a href="login.html" class="btn btn-ghost" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i> Connexion
-                </a>
-                <a href="register.html" class="btn btn-primary" id="registerBtn">
-                    <i class="fas fa-user-plus"></i> S'inscrire
-                </a>
-                <div class="user-menu" id="userMenu" style="display: none;">
-                    <button class="user-btn" id="userBtn">
-                        <i class="fas fa-user"></i>
-                        <span id="userName">Compte</span>
-                    </button>
-                    <div class="user-dropdown">
-                        <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
-                        <a href="profile.html"><i class="fas fa-user-edit"></i> Profil</a>
-                        <a href="token-shop.html"><i class="fas fa-coins"></i> Acheter des tokens</a>
-                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-                    </div>
-                </div>
-            </div>
-            
-            <button class="mobile-toggle" id="mobileToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-    </nav>
+    try {
+        // 1. Récupérer la session Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        // Vérifier que le paiement a réussi
+        if (session.payment_status !== 'paid') {
+            console.log('Paiement non confirmé pour session:', sessionId);
+            return { success: false, error: 'Paiement non confirmé' };
+        }
+        
+        // 2. Récupérer les données de l'achat en attente
+        const pendingDoc = await db.collection('pending_purchases').doc(userId).get();
+        if (!pendingDoc.exists) {
+            console.log('Aucun achat en attente trouvé pour:', userId);
+            return { success: false, error: 'Aucun achat en attente trouvé' };
+        }
+        
+        const purchaseData = pendingDoc.data();
+        const packId = purchaseData.packId;
+        const tokenAmount = purchaseData.tokenAmount || 0;
+        
+        // 3. Ajouter les tokens à l'utilisateur
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+            'tokenState.availableTokens': admin.firestore.FieldValue.increment(tokenAmount),
+            'tokenState.totalTokens': admin.firestore.FieldValue.increment(tokenAmount)
+        });
+        
+        // 4. Nettoyer l'achat en attente
+        await db.collection('pending_purchases').doc(userId).delete();
+        
+        console.log('Pack de tokens confirmé pour:', userId, 'Pack:', packId, 'Tokens:', tokenAmount);
+        return { success: true, packId, tokenAmount };
+        
+    } catch (error) {
+        console.error('Erreur confirmation achat tokens:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <i class="fas fa-star"></i>
-                    <span>N°1 en analyse stratégique</span>
-                </div>
-                
-                <h1 class="hero-title">
-                    Transformez votre 
-                    <span class="gradient-text">croissance externe</span>
-                </h1>
-                 
-                <p class="hero-subtitle">
-                    DPAI vous offre les outils d'analyse les plus avancés pour identifier 
-                    les opportunités de croissance, analyser vos concurrents et optimiser 
-                    votre stratégie d'acquisition.
-                </p>
-                
-                <div class="hero-actions">
-                    <a href="register.html" class="btn btn-primary btn-lg">
-                        <i class="fas fa-rocket"></i> Commencer gratuitement
-                    </a>
-                    <a href="pricing.html" class="btn btn-outline btn-lg">
-                        <i class="fas fa-tag"></i> Voir les tarifs
-                    </a>
-                </div>
-                
-                <div class="hero-trust">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Validé par les utilisateurs</span>
-                </div>
-            </div>
-            
-            <div class="hero-image">
-                <div class="dashboard-mockup">
-                    <div class="mockup-header">
-                        <div class="mockup-dot red"></div>
-                        <div class="mockup-dot yellow"></div>
-                        <div class="mockup-dot green"></div>
-                    </div>
-                    <div class="mockup-content">
-                        <div class="mockup-stat">
-                            <span class="mockup-stat-value">50</span>
-                            <span class="mockup-stat-label">Tokens restants</span>
-                        </div>
-                        <div class="mockup-chart">
-                            <div class="chart-bar" style="--height: 60%"></div>
-                            <div class="chart-bar" style="--height: 80%"></div>
-                            <div class="chart-bar" style="--height: 45%"></div>
-                            <div class="chart-bar" style="--height: 90%"></div>
-                            <div class="chart-bar" style="--height: 70%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Fonctionnalités</span>
-                <h2 class="section-title">
-                    Des outils puissants pour 
-                    <span class="gradient-text">l'analyse stratégique</span>
-                </h2>
-                <p class="section-subtitle">
-                    Notre plateforme combine l'intelligence artificielle et l'expertise 
-                    humaine pour vous offrir des analyses précises et actionnables.
-                </p>
-            </div>
-            
-            <div class="features-grid">
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-swimming-pool"></i>
-                    </div>
-                    <h3 class="feature-title">Analyse SWOT</h3>
-                    <p class="feature-description">
-                        Identifiez les forces, faiblesses, opportunités et menaces de votre entreprise 
-                        ou de vos cibles d'acquisition.
-                    </p>
-                    <a href="services.html#swot" class="feature-link service-link" data-service="swot">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                    <h3 class="feature-title">Porter 5 Forces</h3>
-                    <p class="feature-description">
-                        Analysez la compétitivité d'un secteur en évaluant les cinq forces 
-                        qui déterminent la rentabilité.
-                    </p>
-                    <a href="services.html#porter" class="feature-link service-link" data-service="porter">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-globe-americas"></i>
-                    </div>
-                    <h3 class="feature-title">Analyse PESTEL</h3>
-                    <p class="feature-description">
-                        Évaluez l'impact des facteurs politiques, économiques, socioculturels, 
-                        technologiques, environnementaux et légaux.
-                    </p>
-                    <a href="services.html#pestel" class="feature-link service-link" data-service="pestel">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3 class="feature-title">Analyse Concurrentielle</h3>
-                    <p class="feature-description">
-                        Comparez vos performances avec celles de vos concurrents directs 
-                        et identifiez vos avantages concurrentiels.
-                    </p>
-                    <a href="services.html#competitive" class="feature-link service-link" data-service="competitive">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <h3 class="feature-title">Rapports Détaillés</h3>
-                    <p class="feature-description">
-                        Générez des rapports complets avec recommandations stratégiques 
-                        et plans d'action concrets.
-                    </p>
-                    <a href="services.html#reports" class="feature-link service-link" data-service="reports">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h3 class="feature-title">Tableau de Bord</h3>
-                    <p class="feature-description">
-                        Suivez vos analyses, vos tokens et vos performances en temps réel 
-                        avec notre interface intuitive.
-                    </p>
-                    <a href="services.html#dashboard" class="feature-link service-link" data-service="dashboard">
-                        En savoir plus <i class="fas fa-arrow-right"></i>
-                    </a>
-                </article>
-            </div>
-        </div>
-    </section>
-
-    <!-- Services Overview -->
-    <section class="services-overview" id="services">
-        <div class="container">
-            <div class="services-grid">
-                <div class="service-item">
-                    <div class="service-count">10+</div>
-                    <h3>Types d'analyses</h3>
-                    <p>Des analyses complètes couvrant tous les aspects de la croissance externe.</p>
-                </div>
-                <div class="service-item">
-                    <div class="service-count">50</div>
-                    <h3>Tokens gratuits</h3>
-                    <p>Pour commencer immédiatement avec notre offre gratuite.</p>
-                </div>
-                <div class="service-item">
-                    <div class="service-count">24/7</div>
-                    <h3>Support</h3>
-                    <p>Assistance prioritaire pour nos utilisateurs premium.</p>
-                </div>
-                <div class="service-item">
-                    <div class="service-count">100%</div>
-                    <h3>Personnalisé</h3>
-                    <p>Des solutions adaptées à vos besoins spécifiques.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Comment ça marche</span>
-                <h2 class="section-title">
-                    Simple, rapide et efficace
-                </h2>
-            </div>
-            
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <h3>Inscription</h3>
-                    <p>Créez votre compte gratuitement et recevez 50 tokens pour démarrer.</p>
-                </div>
-                <div class="step-arrow">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3>Choisissez une analyse</h3>
-                    <p>Sélectionnez le type d'analyse dont vous avez besoin.</p>
-                </div>
-                <div class="step-arrow">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-icon">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                    <h3>Utilisez vos tokens</h3>
-                    <p>Dépensez vos tokens pour obtenir vos résultats instantanément.</p>
-                </div>
-                <div class="step-arrow">
-                    <i class="fas fa-arrow-right"></i>
-                </div>
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div class="step-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <h3>Obtenez vos résultats</h3>
-                    <p>Consultez vos analyses détaillées et prenez des décisions éclairées.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Preview -->
-    <section class="pricing-preview">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Tarification</span>
-                <h2 class="section-title">
-                    Des formules adaptées à vos besoins
-                </h2>
-                <p class="section-subtitle">
-                    Choisissez entre nos abonnements ou achetez des packs de tokens à la carte.
-                </p>
-            </div>
-            
-            <div class="pricing-cards">
-                <div class="pricing-card">
-                    <div class="pricing-card-header">
-                        <h3>Gratuit</h3>
-                        <div class="pricing-badge">Gratuit</div>
-                    </div>
-                    <div class="pricing-price">
-                        <span class="price-amount">0€</span>
-                        <span class="price-period">/mois</span>
-                    </div>
-                    <div class="pricing-tokens">
-                        <i class="fas fa-coins"></i>
-                        <span>50 tokens + 1/jour</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Analyses de base</li>
-                        <li><i class="fas fa-check"></i> Accès limité</li>
-                        <li><i class="fas fa-check"></i> 3 projets</li>
-                    </ul>
-                    <a href="pricing.html" class="btn btn-outline">Voir les détails</a>
-                </div>
-                
-                <div class="pricing-card featured">
-                    <div class="pricing-card-header">
-                        <h3>Pro</h3>
-                        <div class="pricing-badge">Le plus populaire</div>
-                    </div>
-                    <div class="pricing-price">
-                        <span class="price-amount">50€</span>
-                        <span class="price-period">/mois</span>
-                    </div>
-                    <div class="pricing-tokens">
-                        <i class="fas fa-coins"></i>
-                        <span>500 tokens/mois + 1/jour</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Toutes les analyses</li>
-                        <li><i class="fas fa-check"></i> Rapports détaillés</li>
-                        <li><i class="fas fa-check"></i> Projets illimités</li>
-                        <li><i class="fas fa-check"></i> Support prioritaire</li>
-                    </ul>
-                    <a href="pricing.html" class="btn btn-primary">Choisir ce plan</a>
-                </div>
-                
-                <div class="pricing-card">
-                    <div class="pricing-card-header">
-                        <h3>Entreprise</h3>
-                        <div class="pricing-badge">Premium</div>
-                    </div>
-                    <div class="pricing-price">
-                        <span class="price-amount">300€</span>
-                        <span class="price-period">/mois</span>
-                    </div>
-                    <div class="pricing-tokens">
-                        <i class="fas fa-coins"></i>
-                        <span>5000 tokens/mois + 1/jour</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li><i class="fas fa-check"></i> Tout inclus</li>
-                        <li><i class="fas fa-check"></i> Accès API</li>
-                        <li><i class="fas fa-check"></i> Support dédié</li>
-                        <li><i class="fas fa-check"></i> Formation incluse</li>
-                    </ul>
-                    <a href="pricing.html" class="btn btn-outline">Voir les détails</a>
-                </div>
-            </div>
-            
-            <div class="token-packs-preview">
-                <h3>Packs de tokens</h3>
-                <div class="token-packs">
-                    <div class="token-pack">
-                        <div class="token-pack-name">Découverte</div>
-                        <div class="token-pack-amount">100 tokens</div>
-                        <div class="token-pack-price">12€</div>
-                    </div>
-                    <div class="token-pack">
-                        <div class="token-pack-name">Boost</div>
-                        <div class="token-pack-amount">300 tokens</div>
-                        <div class="token-pack-price">30€</div>
-                    </div>
-                    <div class="token-pack">
-                        <div class="token-pack-name">Expert</div>
-                        <div class="token-pack-amount">600 tokens</div>
-                        <div class="token-pack-price">55€</div>
-                        <div class="token-pack-badge">Meilleur rapport</div>
-                    </div>
-                    <div class="token-pack">
-                        <div class="token-pack-name">Rapport unique</div>
-                        <div class="token-pack-amount">250 tokens</div>
-                        <div class="token-pack-price">25€</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-
-
-    <!-- CTA Section -->
-    <section class="cta">
-        <div class="container">
-            <div class="cta-content">
-                <h2>Prêt à transformer votre croissance externe ?</h2>
-                <p>Rejoignez des centaines d'entreprises qui utilisent déjà DPAI pour prendre des décisions stratégiques éclairées.</p>
-                <div class="cta-actions">
-                    <a href="register.html" class="btn btn-primary btn-lg">
-                        <i class="fas fa-user-plus"></i> Créer un compte gratuit
-                    </a>
-                    <a href="pricing.html" class="btn btn-outline btn-lg">
-                        <i class="fas fa-tag"></i> Comparer les formules
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <a href="/" class="logo">
-                        <i class="fas fa-chart-line"></i>
-                        <span>DPAI</span>
-                    </a>
-                    <p>Conseil en croissance externe et analyse stratégique avancée.</p>
-                    <div class="social-links">
-                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
-                    </div>
-                </div>
-                
-                <div class="footer-links">
-                    <h4>Produit</h4>
-                    <ul>
-                        <li><a href="#features">Fonctionnalités</a></li>
-                        <li><a href="services.html">Services</a></li>
-                        <li><a href="pricing.html">Tarifs</a></li>
-                        <li><a href="#how-it-works">Comment ça marche</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-links">
-                    <h4>Compte</h4>
-                    <ul>
-                        <li><a href="login.html">Connexion</a></li>
-                        <li><a href="register.html">Inscription</a></li>
-                        <li><a href="dashboard.html">Tableau de bord</a></li>
-                        <li><a href="token-shop.html">Acheter des tokens</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-links">
-                    <h4>Légal</h4>
-                    <ul>
-                        <li><a href="terms.html">Conditions générales</a></li>
-                        <li><a href="privacy.html">Politique de confidentialité</a></li>
-                        <li><a href="cookies.html">Politique des cookies</a></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; 2026 DPAI. Tous droits réservés.</p>
-                <p>Développé avec <i class="fas fa-heart"></i> pour les professionnels de la croissance externe.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Back to Top -->
-    <a href="#" class="back-to-top" id="backToTop">
-        <i class="fas fa-arrow-up"></i>
-    </a>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+// =============================================================================
+// FONCTION: Webhook Stripe (optionnel - pour une confirmation en temps réel)
+// =============================================================================
+// Cette fonction est appelée par Stripe via un webhook
+// Elle permet de confirmer les paiements sans passer par le frontend
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = functions.config().stripe.webhook || process.env.STRIPE_WEBHOOK_SECRET;
+    let event;
     
-    <!-- Configuration Firebase -->
-    <script src="js/firebase-config.js"></script>
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
     
-    <!-- Autres scripts (⚠️ ORDRE IMPORTANT) -->
-    <script src="js/auth.js"></script>
-    <script src="js/payment-links-config.js"></script>   <!-- ✅ AJOUTÉ : URLs Stripe -->
-    <script src="js/tokens.js"></script>
-    <script src="js/stripe-service.js"></script>
-    <script src="js/service-modal.js"></script>
-    <script src="js/main.js"></script>
-</body>
-</html>
+    // Gérer l'événement de paiement réussi
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        
+        // Extraire les données du client_reference_id
+        let clientRef;
+        try {
+            clientRef = JSON.parse(session.client_reference_id || '{}');
+        } catch (e) {
+            clientRef = {};
+        }
+        
+        const userId = clientRef.userId;
+        const type = clientRef.type;
+        
+        if (!userId || !type) {
+            console.log('Données manquantes dans client_reference_id');
+            return res.status(200).json({ received: true });
+        }
+        
+        try {
+            if (type === 'subscription') {
+                const planId = clientRef.planId || 'pro';
+                const isAnnual = clientRef.isAnnual || false;
+                
+                // Mettre à jour l'utilisateur (même logique que confirmStripeSubscription)
+                const planConfigs = {
+                    pro: { baseTokens: 500, bonusRate: 0.20 },
+                    enterprise: { baseTokens: 5000, bonusRate: 0.30 }
+                };
+                const config = planConfigs[planId] || planConfigs.pro;
+                const baseTokens = config.baseTokens;
+                const bonusTokens = Math.floor(baseTokens * config.bonusRate);
+                const totalTokens = baseTokens + bonusTokens + 10;
+                
+                await db.collection('users').doc(userId).update({
+                    plan: planId,
+                    subscriptionStartDate: admin.firestore.FieldValue.serverTimestamp(),
+                    subscriptionEndDate: isAnnual 
+                        ? admin.firestore.Timestamp.fromDate(
+                            new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                        ) 
+                        : null,
+                    hasAccessToPremiumSuggestions: true,
+                    hasAccessToAdvancedAnalytics: planId === 'pro' || planId === 'enterprise',
+                    hasAccessToAPI: planId === 'enterprise',
+                    'tokenState.plan': planId,
+                    'tokenState.baseTokens': baseTokens,
+                    'tokenState.bonusTokens': bonusTokens,
+                    'tokenState.totalTokens': totalTokens,
+                    'tokenState.availableTokens': totalTokens,
+                    'tokenState.usedTokens': 0,
+                    'tokenState.lastTokenUpdate': admin.firestore.FieldValue.serverTimestamp()
+                });
+                
+                await db.collection('pending_purchases').doc(userId).delete();
+                
+            } else if (type === 'token_pack') {
+                const packId = clientRef.packId;
+                const tokenAmount = clientRef.tokenAmount;
+                
+                if (packId && tokenAmount) {
+                    await db.collection('users').doc(userId).update({
+                        'tokenState.availableTokens': admin.firestore.FieldValue.increment(tokenAmount),
+                        'tokenState.totalTokens': admin.firestore.FieldValue.increment(tokenAmount)
+                    });
+                    
+                    await db.collection('pending_purchases').doc(userId).delete();
+                }
+            }
+            
+            console.log('Webhook traité avec succès pour:', userId);
+        } catch (err) {
+            console.error('Erreur traitement webhook:', err);
+        }
+    }
+    
+    // Gérer d'autres événements si nécessaire
+    // if (event.type === 'invoice.paid') { ... }
+    
+    // Répondre avec un statut 200 pour indiquer que l'événement a été reçu
+    res.json({ received: true });
+});
+
+// =============================================================================
+// EXPORT POUR TESTS LOCAUX
+// =============================================================================
+module.exports = {
+    confirmStripeSubscription: exports.confirmStripeSubscription,
+    confirmTokenPurchase: exports.confirmTokenPurchase,
+    stripeWebhook: exports.stripeWebhook
+};
