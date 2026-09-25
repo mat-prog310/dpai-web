@@ -1,5 +1,5 @@
 // =============================================================================
-// STRIPE-SERVICE.JS - Service de paiement via Payment Links
+// STRIPE-SERVICE.JS - VERSION CORRIGÉE (25/09/2026)
 // =============================================================================
 
 // =============================================================================
@@ -40,20 +40,14 @@ function getPaymentLink(key) {
 
 /**
  * Construit l'URL finale avec client_reference_id + prefilled_email
- * pour que le webhook puisse identifier l'utilisateur
  */
 function buildPaymentUrl(baseUrl, data) {
   const params = [];
-
-  // client_reference_id = JSON encodé (userId + planId + type)
   const ref = encodeURIComponent(JSON.stringify(data));
   params.push('client_reference_id=' + ref);
-
-  // prefilled_email (optionnel, aide l'utilisateur)
   if (data.email) {
     params.push('prefilled_email=' + encodeURIComponent(data.email));
   }
-
   const separator = baseUrl.includes('?') ? '&' : '?';
   return baseUrl + separator + params.join('&');
 }
@@ -63,7 +57,7 @@ function buildPaymentUrl(baseUrl, data) {
 // =============================================================================
 class StripeService {
   constructor() {
-    console.log('%c💳 [Stripe] Utilise Payment Links', 'color: #6772e5; font-weight: bold;');
+    console.log('%c💳 [Stripe] Service initialisé - Payment Links', 'color: #6772e5; font-weight: bold;');
   }
 
   async init(publishableKey) {
@@ -72,24 +66,22 @@ class StripeService {
       return false;
     }
     if (publishableKey.startsWith('pk_test_')) {
-      console.log('%c🧪 [Stripe] Mode TEST', 'color: #28a745; font-weight: bold;');
+      console.log('%c🧪 [Stripe] Mode TEST activé', 'color: #28a745; font-weight: bold;');
     } else if (publishableKey.startsWith('pk_live_')) {
-      console.log('%c✅ [Stripe] Mode PRODUCTION', 'color: #28a745;');
+      console.log('%c✅ [Stripe] Mode PRODUCTION activé', 'color: #28a745;');
     }
     return true;
   }
 
   // ===========================================================================
-  // ACHAT DE PACKS DE TOKENS
+  // ACHAT DE PACKS DE TOKENS - CORRIGÉ
   // ===========================================================================
   async purchaseTokenPack(packId, userId) {
     try {
-      const pack = TokenPacks.find(function(p) { return p.id === packId; });
-      if (!pack) {
-        throw new Error('Pack de tokens introuvable');
-      }
+      const pack = TokenPacks.find(p => p.id === packId);
+      if (!pack) throw new Error('Pack de tokens introuvable');
 
-      // Pack gratuit
+      // Pack gratuit - Traiter immédiatement
       if (pack.priceEuros === 0) {
         const FieldValue = getFieldValue();
         await db.collection('users').doc(userId).update({
@@ -102,56 +94,61 @@ class StripeService {
         return { success: true, isFree: true };
       }
 
+      // Pack payant - Créer document et rediriger
       const user = authService.currentUser;
-      if (!user) {
-        throw new Error('Utilisateur non connecté');
-      }
+      if (!user) throw new Error('Utilisateur non connecté');
 
       const paymentUrl = getPaymentLink(packId);
       if (!paymentUrl) {
-        throw new Error('Payment Link non configuré pour ' + packId);
+        throw new Error(`Payment Link non configuré pour ${packId}. Vérifie js/payment-links-config.js`);
       }
 
       const FieldValue = getFieldValue();
-      await db.collection('pending_purchases').doc(user.uid).set({
+
+      // ✅ CORRECTION: Utilise .add() pour créer un document UNIQUE
+      const purchaseRef = await db.collection('purchases').add({
         userId: user.uid,
         packId: packId,
         tokenAmount: pack.tokenAmount,
         type: 'token_pack',
+        status: 'pending',
+        stripeSessionId: null,
+        stripePaymentIntentId: null,
         createdAt: FieldValue.serverTimestamp(),
-        status: 'pending'
+        updatedAt: FieldValue.serverTimestamp()
       });
 
-      // ✅ Ajout du client_reference_id + prefilled_email
+      // ✅ CORRECTION: Ajoute purchaseId pour le webhook
       const finalUrl = buildPaymentUrl(paymentUrl, {
         userId: user.uid,
-        planId: packId,
+        packId: packId,
+        tokenAmount: pack.tokenAmount, // Ajout pour le webhook
         type: 'token_pack',
+        purchaseId: purchaseRef.id, // ⬅️ CRITIQUE
         email: user.email || ''
       });
-      console.log('🔗 Redirection Stripe:', finalUrl);
+
+      console.log('🔗 [Stripe] Redirection vers:', finalUrl);
       window.location.href = finalUrl;
-      return { success: true, redirected: true };
+      return { success: true, redirected: true, purchaseId: purchaseRef.id };
 
     } catch (error) {
-      console.error('Erreur achat pack tokens:', error);
+      console.error('❌ [Stripe] Erreur achat pack tokens:', error);
       return { success: false, error: error.message };
     }
   }
 
   // ===========================================================================
-  // ACHAT D'UN ABONNEMENT
+  // ACHAT D'UN ABONNEMENT - CORRIGÉ
   // ===========================================================================
   async purchaseSubscription(planId, userId, isAnnual) {
     if (isAnnual === undefined) isAnnual = false;
 
     try {
-      const plan = SubscriptionPlansData.find(function(p) { return p.id === planId; });
-      if (!plan) {
-        throw new Error('Plan introuvable');
-      }
+      const plan = SubscriptionPlansData.find(p => p.id === planId);
+      if (!plan) throw new Error('Plan introuvable');
 
-      // Plan gratuit
+      // Plan gratuit - Traiter immédiatement
       if (plan.priceEuros === 0) {
         const baseTokens = plan.tokenLimit;
         const bonusTokens = Math.floor(baseTokens * plan.bonusRate);
@@ -161,6 +158,9 @@ class StripeService {
           plan: planId,
           subscriptionStartDate: new Date().toISOString(),
           subscriptionEndDate: null,
+          hasAccessToPremiumSuggestions: planId === 'pro' || planId === 'enterprise',
+          hasAccessToAdvancedAnalytics: planId === 'pro' || planId === 'enterprise',
+          hasAccessToAPI: planId === 'enterprise',
           tokenState: {
             userId: userId,
             plan: planId,
@@ -179,45 +179,50 @@ class StripeService {
         if (typeof loadUserTokenData === 'function') {
           await loadUserTokenData(userId);
         }
-
         return { success: true, isFree: true };
       }
 
+      // Plan payant - Créer document et rediriger
       const user = authService.currentUser;
-      if (!user) {
-        throw new Error('Utilisateur non connecté');
-      }
+      if (!user) throw new Error('Utilisateur non connecté');
 
       const linkKey = isAnnual ? (planId + '_annual') : (planId + '_monthly');
       const paymentUrl = getPaymentLink(linkKey);
       if (!paymentUrl) {
-        throw new Error('Payment Link non configuré pour ' + linkKey);
+        throw new Error(`Payment Link non configuré pour ${linkKey}. Vérifie js/payment-links-config.js`);
       }
 
       const FieldValue = getFieldValue();
-      await db.collection('pending_purchases').doc(user.uid).set({
+
+      // ✅ CORRECTION: Utilise .add() pour créer un document UNIQUE
+      const purchaseRef = await db.collection('purchases').add({
         userId: user.uid,
         planId: planId,
         isAnnual: isAnnual,
         type: 'subscription',
+        status: 'pending',
+        stripeSessionId: null,
+        stripePaymentIntentId: null,
         createdAt: FieldValue.serverTimestamp(),
-        status: 'pending'
+        updatedAt: FieldValue.serverTimestamp()
       });
 
-      // ✅ Ajout du client_reference_id + prefilled_email
+      // ✅ CORRECTION: Ajoute purchaseId pour le webhook
       const finalUrl = buildPaymentUrl(paymentUrl, {
         userId: user.uid,
         planId: planId,
         isAnnual: isAnnual,
         type: 'subscription',
+        purchaseId: purchaseRef.id, // ⬅️ CRITIQUE
         email: user.email || ''
       });
-      console.log('🔗 Redirection Stripe:', finalUrl);
+
+      console.log('🔗 [Stripe] Redirection vers:', finalUrl);
       window.location.href = finalUrl;
-      return { success: true, redirected: true };
+      return { success: true, redirected: true, purchaseId: purchaseRef.id };
 
     } catch (error) {
-      console.error('Erreur achat abonnement:', error);
+      console.error('❌ [Stripe] Erreur achat abonnement:', error);
       return { success: false, error: error.message };
     }
   }
@@ -237,8 +242,7 @@ class StripeService {
 
   getCustomerName() {
     const user = authService.currentUser;
-    if (user && user.displayName) return user.displayName;
-    return 'Client DPAI';
+    return user && user.displayName ? user.displayName : 'Client DPAI';
   }
 }
 
@@ -247,4 +251,4 @@ class StripeService {
 // =============================================================================
 window.stripeService = new StripeService();
 var stripeService = window.stripeService;
-console.log('%c💳 [stripe-service.js] stripeService exposé en global', 'color: #6772e5; font-weight: bold;');
+console.log('%c💳 [stripe-service.js] Service exposé en global - Prêt !', 'color: #6772e5; font-weight: bold;');
