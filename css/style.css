@@ -1312,7 +1312,7 @@ section {
     .hero-image {
         order: -1;
     }
-    
+   
     .steps {
         flex-wrap: wrap;
     }
