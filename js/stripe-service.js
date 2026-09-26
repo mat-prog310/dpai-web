@@ -128,7 +128,13 @@ class StripeService {
         email: user.email || ''
       });
 
+      // Stocker purchaseId en sessionStorage pour la confirmation après retour
+      sessionStorage.setItem('stripe_purchase_id', purchaseRef.id);
+      sessionStorage.setItem('stripe_purchase_type', 'token_pack');
+      sessionStorage.setItem('stripe_purchase_packId', packId);
+
       console.log('🔗 [Stripe] Redirection vers:', finalUrl);
+      console.log('💾 [Stripe] purchaseId stocké en sessionStorage:', purchaseRef.id);
       window.location.href = finalUrl;
       return { success: true, redirected: true, purchaseId: purchaseRef.id };
 
@@ -217,7 +223,14 @@ class StripeService {
         email: user.email || ''
       });
 
+      // Stocker purchaseId en sessionStorage pour la confirmation après retour
+      sessionStorage.setItem('stripe_purchase_id', purchaseRef.id);
+      sessionStorage.setItem('stripe_purchase_type', 'subscription');
+      sessionStorage.setItem('stripe_purchase_planId', planId);
+      sessionStorage.setItem('stripe_purchase_isAnnual', isAnnual);
+
       console.log('🔗 [Stripe] Redirection vers:', finalUrl);
+      console.log('💾 [Stripe] purchaseId stocké en sessionStorage:', purchaseRef.id);
       window.location.href = finalUrl;
       return { success: true, redirected: true, purchaseId: purchaseRef.id };
 
@@ -251,4 +264,24 @@ class StripeService {
 // =============================================================================
 window.stripeService = new StripeService();
 var stripeService = window.stripeService;
+
+// Initialisation automatique avec la clé Stripe si disponible
+if (window.stripePublishableKey) {
+  stripeService.init(window.stripePublishableKey);
+} else {
+  // Attendre que la clé soit définie (au cas où firebase-config.js est chargé après)
+  const initStripeWhenReady = setInterval(() => {
+    if (window.stripePublishableKey) {
+      clearInterval(initStripeWhenReady);
+      stripeService.init(window.stripePublishableKey);
+    }
+  }, 100);
+  
+  // Timeout de sécurité au cas où la clé ne serait jamais définie
+  setTimeout(() => {
+    clearInterval(initStripeWhenReady);
+    console.warn('%c⚠️ [Stripe] Clé publique Stripe non définie après 5 secondes', 'color: #ffc107;');
+  }, 5000);
+}
+
 console.log('%c💳 [stripe-service.js] Service exposé en global - Prêt !', 'color: #6772e5; font-weight: bold;');
