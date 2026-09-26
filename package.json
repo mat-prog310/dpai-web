@@ -1,10 +1,23 @@
 {
-  "name": "dpai-web",
+  "name": "dpai_web",
   "version": "1.0.0",
-  "description": "DPAI Web Application - Analyse strategique",
-  "main": "public/index.html",
-  "scripts": {},
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mat-prog310/dpai_web.git"
+  },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mat-prog310/dpai_web/issues"
+  },
+  "homepage": "https://github.com/mat-prog310/dpai_web#readme",
+  "dependencies": {
+    "stripe": "^22.6.2"
+  }
 }
