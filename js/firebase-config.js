@@ -12,12 +12,15 @@ const firebaseConfig = {
 };
 
 // ===========================================================================
-// MODE PRODUCTION STRIPE - Clé publique LIVE
+// CONFIGURATION STRIPE - Basculable entre TEST et PRODUCTION
 // ===========================================================================
-// Clé publique LIVE - Pour les paiements réels
-// https://dashboard.stripe.com/apikeys
+// Clé publique TEST - Pour les paiements de test (utilise des cartes de test)
+// https://dashboard.stripe.com/test/apikeys
 // ===========================================================================
-window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
+window.stripePublishableKey = "pk_test_51UJIbK2dD1TTJziQgwBAsLPvo6gX6KE9LZDEX9e3AMrYzEyA3U6RpOEjVQttkIGgPUWjMGCcasWVWPS9Qrb3gliT00REq347RI";
+
+// Pour basculer en PRODUCTION, décommentez la ligne ci-dessous et commentez celle ci-dessus
+// window.stripePublishableKey = "pk_live_51TaGALKEd7fefQpsxCOkbQw5qkmOorwI9UbdKv2TBeLzSouvPbaRdusfCVVCVb5YwqUdWgkm1qvqh6nq4PnPy1FB00jvv10lRc";
 
 // Vérifier le protocole - Firebase Auth ne fonctionne pas avec file://
 if (window.location.protocol === 'file:') {
