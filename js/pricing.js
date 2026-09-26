@@ -98,12 +98,22 @@ function initSubscriptionButtons() {
     
     if (subscribeProBtn) {
         subscribeProBtn.onclick = function() {
+            const user = window.authService?.currentUser;
+            if (!user) {
+                showAlert('error', 'Erreur', 'Connectez-vous d\'abord pour souscrire.');
+                return;
+            }
             const plan = this.getAttribute('data-plan');
             openSubscriptionModal(plan);
         };
     }
     if (subscribeEnterpriseBtn) {
         subscribeEnterpriseBtn.onclick = function() {
+            const user = window.authService?.currentUser;
+            if (!user) {
+                showAlert('error', 'Erreur', 'Connectez-vous d\'abord pour souscrire.');
+                return;
+            }
             const plan = this.getAttribute('data-plan');
             openSubscriptionModal(plan);
         };
@@ -115,6 +125,11 @@ function initTokenPackButtons() {
     
     buyPackBtns.forEach(function(btn) {
         btn.onclick = function() {
+            const user = window.authService?.currentUser;
+            if (!user) {
+                showAlert('error', 'Erreur', 'Connectez-vous d\'abord pour acheter des tokens.');
+                return;
+            }
             const packId = this.getAttribute('data-pack');
             openTokenPackModal(packId);
         };
@@ -389,7 +404,7 @@ function showAlert(type, title, message) {
 }
 
 // =============================================================================
-// VÉRIF STATUT RETOUR STRIPE
+// VÉRIF STATUT RETOUR STRIPE (Abonnements + Packs de tokens)
 // =============================================================================
 async function checkStripeSubscriptionStatus() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -397,13 +412,14 @@ async function checkStripeSubscriptionStatus() {
     const sessionId = urlParams.get('session_id');
     const canceled = urlParams.get('canceled');
     
+    // Nettoyer l'URL immédiatement
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
     if (success !== 'true' && success !== 'false' && canceled !== 'true') return;
     
     const user = window.authService && window.authService.currentUser;
-    window.history.replaceState({}, document.title, window.location.pathname);
-    
     if (!user) {
-        showAlert('error', 'Erreur', 'Vous devez être connecté pour activer votre abonnement.');
+        showAlert('error', 'Erreur', 'Vous devez être connecté pour finaliser votre achat.');
         return;
     }
     
@@ -412,54 +428,131 @@ async function checkStripeSubscriptionStatus() {
     const isDemoMode = !isFirebaseAvailable || isFileProtocol;
     
     if (success === 'true') {
-        if (isDemoMode) {
-            try {
+        try {
+            // Récupérer purchaseId depuis sessionStorage (stocké avant redirection)
+            const purchaseId = sessionStorage.getItem('stripe_purchase_id');
+            const purchaseType = sessionStorage.getItem('stripe_purchase_type');
+            
+            // Nettoyer sessionStorage
+            sessionStorage.removeItem('stripe_purchase_id');
+            sessionStorage.removeItem('stripe_purchase_type');
+            sessionStorage.removeItem('stripe_purchase_planId');
+            sessionStorage.removeItem('stripe_purchase_isAnnual');
+            sessionStorage.removeItem('stripe_purchase_packId');
+            
+            // Si pas de purchaseId en sessionStorage, essayer l'ancien système
+            if (!purchaseId) {
+                console.log('⚠️ [Stripe] Pas de purchaseId en sessionStorage, utilisation de pending_purchases');
                 const pendingDoc = await db.collection('pending_purchases').doc(user.uid).get();
-                if (pendingDoc.exists) {
-                    const planId = pendingDoc.data().planId;
-                    if (planId && window.authService.userData) {
-                        window.authService.userData.plan = planId;
-                        const expirationDate = new Date();
-                        expirationDate.setDate(expirationDate.getDate() + 30);
-                        window.authService.userData.subscriptionExpiry = expirationDate.toISOString();
-                        showAlert('success', 'Succès', 'Abonnement ' + planId.toUpperCase() + ' activé ! (démo - 30 jours)');
-                        return;
-                    }
+                if (!pendingDoc.exists) {
+                    showAlert('warning', 'Attention', 'Aucun achat en attente trouvé. Le paiement peut déjà être activé.');
+                    return;
                 }
-                showAlert('error', 'Erreur', 'Impossible d\'activer l\'abonnement en mode démo.');
-            } catch (error) {
-                console.error('[STRIPE] Erreur démo:', error);
-                showAlert('error', 'Erreur', 'Erreur mode démo.');
-            }
-        } else {
-            try {
-                const functions = firebase.functions();
-                const pendingDoc = await db.collection('pending_purchases').doc(user.uid).get();
-                let planId = null;
-                if (pendingDoc.exists) planId = pendingDoc.data().planId;
                 
-                const confirmFn = functions.httpsCallable('confirmStripeSubscription');
-                const result = await confirmFn({ userId: user.uid, sessionId: sessionId, planId: planId });
+                const purchaseData = pendingDoc.data();
+                const type = purchaseData.type; // 'subscription' ou 'token_pack'
+                const functions = firebase.functions();
+                
+                // Appeler la fonction de confirmation avec l'ancien système
+                let confirmFn, params;
+                if (type === 'subscription') {
+                    confirmFn = functions.httpsCallable('confirmStripeSubscription');
+                    params = { userId: user.uid, sessionId: sessionId, planId: purchaseData.planId };
+                } else if (type === 'token_pack') {
+                    confirmFn = functions.httpsCallable('confirmTokenPurchase');
+                    params = { userId: user.uid, sessionId: sessionId, packId: purchaseData.packId };
+                } else {
+                    showAlert('error', 'Erreur', 'Type d\'achat inconnu.');
+                    return;
+                }
+                
+                const result = await confirmFn(params);
                 
                 if (result.data.success) {
-                    showAlert('success', 'Succès', 'Abonnement ' + ((result.data.planId || planId || '').toUpperCase()) + ' activé !');
+                    const message = type === 'subscription'
+                        ? 'Abonnement ' + (result.data.planId || purchaseData.planId || '').toUpperCase() + ' activé !'
+                        : (result.data.tokenAmount || purchaseData.tokenAmount || '0') + ' tokens ajoutés !';
+                    showAlert('success', 'Succès', message);
+                    
                     if (typeof window.authService.loadUserData === 'function') {
                         await window.authService.loadUserData(user.uid);
                     }
                     if (typeof window.authService.updateUI === 'function') {
                         window.authService.updateUI();
                     }
-                    setTimeout(function() { window.location.reload(); }, 1500);
                 } else {
-                    showAlert('error', 'Erreur', result.data.error || 'Abonnement non activé.');
+                    showAlert('error', 'Erreur', result.data.error || 'Erreur de confirmation');
                 }
-            } catch (error) {
-                console.error('[STRIPE] Erreur vérif:', error);
-                showAlert('warning', 'Attention', 'Abonnement peut-être activé. Rafraîchis la page.');
+                return;
             }
+            
+            // Nouveau système avec purchaseId
+            const planId = sessionStorage.getItem('stripe_purchase_planId');
+            const isAnnual = sessionStorage.getItem('stripe_purchase_isAnnual') === 'true';
+            const packId = sessionStorage.getItem('stripe_purchase_packId');
+            const tokenAmount = sessionStorage.getItem('stripe_purchase_tokenAmount');
+            
+            const functions = firebase.functions();
+            
+            if (isDemoMode) {
+                // Mode démo : simuler la confirmation
+                if (purchaseType === 'subscription') {
+                    if (planId && window.authService.userData) {
+                        window.authService.userData.plan = planId;
+                        const expirationDate = new Date();
+                        expirationDate.setDate(expirationDate.getDate() + 30);
+                        window.authService.userData.subscriptionExpiry = expirationDate.toISOString();
+                        showAlert('success', 'Succès', 'Abonnement ' + planId.toUpperCase() + ' activé ! (démo - 30 jours)');
+                        setTimeout(() => window.location.reload(), 1500);
+                        return;
+                    }
+                } else if (purchaseType === 'token_pack') {
+                    showAlert('success', 'Succès', tokenAmount + ' tokens ajoutés ! (démo)');
+                    setTimeout(() => window.location.reload(), 1500);
+                    return;
+                }
+                showAlert('error', 'Erreur', 'Impossible de finaliser en mode démo.');
+                return;
+            }
+            
+            // Mode production : appeler la Cloud Function appropriée
+            let confirmFn, params;
+            if (purchaseType === 'subscription') {
+                confirmFn = functions.httpsCallable('confirmStripeSubscription');
+                params = { userId: user.uid, sessionId: sessionId, planId: planId, isAnnual: isAnnual, purchaseId: purchaseId };
+            } else if (purchaseType === 'token_pack') {
+                confirmFn = functions.httpsCallable('confirmTokenPurchase');
+                params = { userId: user.uid, sessionId: sessionId, packId: packId, tokenAmount: parseInt(tokenAmount) || 0, purchaseId: purchaseId };
+            } else {
+                showAlert('error', 'Erreur', 'Type d\'achat inconnu.');
+                return;
+            }
+            
+            const result = await confirmFn(params);
+            
+            if (result.data.success) {
+                const message = purchaseType === 'subscription'
+                    ? 'Abonnement ' + (result.data.planId || planId || '').toUpperCase() + ' activé !'
+                    : (result.data.tokenAmount || tokenAmount || '0') + ' tokens ajoutés !';
+                showAlert('success', 'Succès', message);
+                
+                // Recharger les données utilisateur
+                if (typeof window.authService.loadUserData === 'function') {
+                    await window.authService.loadUserData(user.uid);
+                }
+                if (typeof window.authService.updateUI === 'function') {
+                    window.authService.updateUI();
+                }
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlert('error', 'Erreur', result.data.error || 'Confirmation échouée.');
+            }
+        } catch (error) {
+            console.error('[STRIPE] Erreur vérification:', error);
+            showAlert('warning', 'Attention', 'Paiement peut-être activé. Rafraîchissez la page.');
         }
     } else if (success === 'false' || canceled === 'true') {
-        showAlert('warning', 'Paiement annulé', 'Vous avez annulé l\'abonnement.');
+        showAlert('warning', 'Paiement annulé', 'Vous avez annulé le paiement.');
     }
 }
 
